@@ -112,11 +112,11 @@ const MOCK_LOCATIONS = [
 const Badge = ({ children, variant = 'default' }) => {
   const styles = {
     default: 'bg-slate-100 text-slate-600',
-    success: 'bg-emerald-100 text-emerald-700',
-    warning: 'bg-amber-100 text-amber-700',
-    info: 'bg-blue-100 text-blue-700',
-    error: 'bg-red-100 text-red-700',
-    indigo: 'bg-indigo-100 text-indigo-700',
+    success: 'bg-emerald-50 text-emerald-700',
+    warning: 'bg-amber-50 text-amber-700',
+    info: 'bg-blue-50 text-blue-700',
+    error: 'bg-red-50 text-red-700',
+    indigo: 'bg-indigo-50 text-indigo-700',
   };
   return <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${styles[variant]}`}>{children}</span>;
 };
@@ -312,6 +312,9 @@ export default function App() {
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
             <Download size={16} /> Export Workspace
+          </button>
+          <button onClick={() => setShowInviteModal(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
+            <UserPlus size={16} /> Invite Team
           </button>
         </div>
       </header>
