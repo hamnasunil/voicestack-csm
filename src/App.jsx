@@ -43,7 +43,8 @@ import {
   Tag,
   Activity,
   BarChart3,
-  Globe
+  Globe,
+  Scissors
 } from 'lucide-react';
 
 // --- Constants ---
@@ -69,6 +70,15 @@ const PROGRESS_STATES = [
   'Pending Review',
   'Changes Requested',
   'Completed'
+];
+
+const LOCATION_SECTIONS = [
+  { id: 'basics', title: 'Location Basics', status: 'Complete' },
+  { id: 'phones', title: 'Phone Setup', status: 'In Progress' },
+  { id: 'workflow', title: 'Workflow Details', status: 'Not Started' },
+  { id: 'hours', title: 'Hours & Holidays', status: 'Not Started' },
+  { id: 'additional', title: 'Additional Info', status: 'Not Started' },
+  { id: 'uploads', title: 'Documents & Uploads', status: 'Not Started' },
 ];
 
 const PRACTICE_BASE_DATA = {
@@ -123,6 +133,19 @@ const Badge = ({ children, variant = 'default' }) => {
   return <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${styles[variant]}`}>{children}</span>;
 };
 
+const InheritanceBadge = ({ type = 'default' }) => {
+  if (type === 'default') return (
+    <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 uppercase tracking-tighter">
+      <Layers size={10} /> Practice Default
+    </div>
+  );
+  return (
+    <div className="flex items-center gap-1.5 text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 uppercase tracking-tighter">
+      <RefreshCcw size={10} /> Local Override
+    </div>
+  );
+};
+
 const ContactCard = ({ title, data, onEdit, isBackup = false }) => (
   <div className={`p-5 rounded-3xl border ${isBackup ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-100 shadow-sm'}`}>
     <div className="flex justify-between items-start mb-4">
@@ -160,6 +183,21 @@ const ContactCard = ({ title, data, onEdit, isBackup = false }) => (
         <Plus size={14} /> Add Backup POC
       </button>
     )}
+  </div>
+);
+
+const FormField = ({ label, helper, children, required, inheritance = 'default', badge }) => (
+  <div className="mb-8 last:mb-0">
+    <div className="flex justify-between items-end mb-2">
+      <div className="flex items-center gap-2">
+        <label className="text-xs font-black text-slate-800 uppercase tracking-widest">{label}</label>
+        {required && <span className="text-red-500 text-xs font-bold">*</span>}
+        {badge && <Badge variant="error">{badge}</Badge>}
+      </div>
+      <InheritanceBadge type={inheritance} />
+    </div>
+    {helper && <p className="text-xs text-slate-400 mb-3 leading-relaxed">{helper}</p>}
+    <div className="relative">{children}</div>
   </div>
 );
 
@@ -214,9 +252,22 @@ export default function App() {
   const [role, setRole] = useState(ROLES.PRACTICE_ADMIN);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [activeLocation, setActiveLocation] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+
+  // Form states
+  const [formState, setFormState] = useState({
+    recordAll: "No",
+    routingPattern: "Simultaneous",
+    dnd: true,
+    timezone: "America/Chicago"
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormState(prev => ({ ...prev, [field]: value }));
+  };
 
   // Layout logic
   const renderPracticeDashboard = () => (
@@ -268,10 +319,9 @@ export default function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {/* Location Board */}
           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-               <h3 className="font-black text-slate-800">Active Execution Board</h3>
+               <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">Rollout execution Board</h3>
                <div className="relative">
                   <input type="text" placeholder="Search site..." className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-100 w-48" />
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
@@ -291,10 +341,10 @@ export default function App() {
                   {MOCK_LOCATIONS.map(loc => (
                     <tr key={loc.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-5">
-                        <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{loc.name}</p>
+                        <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors tracking-tight">{loc.name}</p>
                         <p className="text-xs text-slate-400">{loc.city}</p>
                       </td>
-                      <td className="px-6 py-5 font-bold text-xs text-slate-600 uppercase tracking-tight">
+                      <td className="px-6 py-5 font-bold text-[11px] text-slate-600 uppercase tracking-tight">
                         {loc.stage}
                       </td>
                       <td className="px-6 py-5">
@@ -306,7 +356,7 @@ export default function App() {
                       </td>
                       <td className="px-6 py-5 text-right">
                          <button 
-                          onClick={() => { setActiveLocation(loc); setCurrentPage('location-detail'); }}
+                          onClick={() => { setActiveLocation(loc); setActiveStep(0); setCurrentPage('location-detail'); }}
                           className="p-2 bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white rounded-xl transition-all"
                          >
                            <ArrowUpRight size={18} />
@@ -319,12 +369,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* Sales & Contract Section */}
           <div className="grid grid-cols-2 gap-6">
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                <div className="flex items-center gap-3 mb-6">
                  <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl"><FileBadge size={20}/></div>
-                 <h3 className="font-black text-slate-800">Contract Status</h3>
+                 <h3 className="font-black text-slate-800 tracking-tight uppercase text-xs">Contract Status</h3>
                </div>
                <div className="space-y-4">
                  <div>
@@ -335,55 +384,45 @@ export default function App() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Renewal Date</p>
                     <p className="text-sm font-bold text-slate-700">{PRACTICE_BASE_DATA.contractRenewal}</p>
                  </div>
-                 <button className="w-full py-3 bg-slate-50 text-slate-500 font-bold text-xs rounded-xl hover:bg-slate-100">View Contract PDF</button>
                </div>
             </div>
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                <div className="flex items-center gap-3 mb-6">
                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl"><Tag size={20}/></div>
-                 <h3 className="font-black text-slate-800">Sales Snippet</h3>
+                 <h3 className="font-black text-slate-800 tracking-tight uppercase text-xs">Sales Snippet</h3>
                </div>
-               <p className="text-sm text-slate-500 leading-relaxed italic">
+               <p className="text-xs text-slate-500 leading-relaxed italic">
                  "{PRACTICE_BASE_DATA.salesNotes}"
                </p>
-               <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Account Exec: Ryan G.</span>
-                  <button className="text-[10px] text-blue-600 font-bold hover:underline">Edit Notes</button>
-               </div>
             </div>
           </div>
         </div>
 
-        {/* Practice POCs & Side Info */}
         <div className="space-y-6">
           <ContactCard title="Primary Practice POC" data={PRACTICE_BASE_DATA.poc.primary} />
           <ContactCard title="Backup Practice POC" data={PRACTICE_BASE_DATA.poc.backup} isBackup />
           
-          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-slate-900/20 relative overflow-hidden">
-             <div className="relative z-10">
-               <h4 className="text-lg font-black tracking-tight mb-2">Practice Team</h4>
-               <p className="text-slate-400 text-xs mb-6 leading-relaxed">Manage other practice managers and contributors who have access to this workspace.</p>
-               <div className="space-y-3 mb-8">
-                  {[
-                    { name: 'Dr. Sarah Lee', initial: 'SL', role: 'Owner' },
-                    { name: 'James Wilson', initial: 'JW', role: 'Ops' },
-                  ].map(user => (
-                    <div key={user.name} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/10">
-                       <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black">{user.initial}</div>
-                          <div>
-                            <p className="text-xs font-bold">{user.name}</p>
-                            <p className="text-[9px] text-slate-500 uppercase">{user.role}</p>
-                          </div>
-                       </div>
-                       <button className="p-1.5 text-slate-500 hover:text-white"><MoreHorizontal size={14}/></button>
-                    </div>
-                  ))}
-               </div>
-               <button onClick={() => setShowInviteModal(true)} className="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-xs hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50">
-                 <UserPlus size={16} /> Invite New Manager
-               </button>
+          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-slate-900/20">
+             <h4 className="text-lg font-black tracking-tight mb-2 uppercase text-[10px] text-blue-400">Practice Team</h4>
+             <div className="space-y-3 mb-8 mt-6">
+                {[
+                  { name: 'Dr. Sarah Lee', initial: 'SL', role: 'Owner' },
+                  { name: 'James Wilson', initial: 'JW', role: 'Ops' },
+                ].map(user => (
+                  <div key={user.name} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/10">
+                     <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black">{user.initial}</div>
+                        <div>
+                          <p className="text-xs font-bold">{user.name}</p>
+                          <p className="text-[9px] text-slate-500 uppercase">{user.role}</p>
+                        </div>
+                     </div>
+                  </div>
+                ))}
              </div>
+             <button onClick={() => setShowInviteModal(true)} className="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-xs hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 uppercase tracking-widest">
+               Invite Manager
+             </button>
           </div>
         </div>
       </div>
@@ -410,7 +449,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Internal High Level Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { label: 'Active Projects', val: '48', icon: <Layers size={18}/>, color: 'blue' },
@@ -428,16 +466,14 @@ export default function App() {
         ))}
       </div>
 
-      {/* Internal Accounts Registry Table */}
       <div className="bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
         <div className="p-6 border-b border-slate-50 bg-slate-50/20 flex justify-between items-center">
-           <h3 className="font-black text-slate-800">Practice Rollout Registry</h3>
+           <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">Practice Rollout Registry</h3>
            <div className="flex gap-3">
               <div className="relative">
                  <input type="text" placeholder="Search accounts..." className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl w-64 text-sm outline-none focus:ring-1 focus:ring-blue-100 shadow-sm" />
                  <Search className="absolute left-3.5 top-3.5 text-slate-400" size={16} />
               </div>
-              <button className="p-2.5 bg-white rounded-xl text-slate-400 border border-slate-100 shadow-sm"><Filter size={20}/></button>
            </div>
         </div>
         <div className="overflow-x-auto">
@@ -466,7 +502,6 @@ export default function App() {
                           </div>
                           <span className="text-[10px] font-black text-slate-500">{p.progress}%</span>
                        </div>
-                       <p className="text-[9px] font-black text-slate-400 uppercase mt-1.5">{p.live} of {p.sites} Sites Live</p>
                     </td>
                     <td className="px-6 py-6">
                        <p className="text-sm font-bold text-slate-700">{p.sites} Sites</p>
@@ -494,6 +529,8 @@ export default function App() {
 
   const renderLocationDetail = () => {
     if (!activeLocation) return null;
+    const currentSection = LOCATION_SECTIONS[activeStep];
+
     return (
       <div className="space-y-8 animate-in slide-in-from-right-10 duration-500 pb-20">
         <div className="flex items-center justify-between">
@@ -503,68 +540,242 @@ export default function App() {
             </button>
             <div>
               <h1 className="text-4xl font-black text-slate-800 tracking-tighter">{activeLocation.name}</h1>
-              <p className="text-sm font-bold text-slate-500 flex items-center gap-2 mt-1">
-                <MapPin size={16} className="text-blue-500" /> {activeLocation.city} Branch • Site ID: #VOX-L1102
+              <p className="text-sm font-bold text-slate-500 flex items-center gap-2 mt-1 uppercase tracking-wider">
+                <MapPin size={16} className="text-blue-500" /> {activeLocation.city} • Site ID: #VOX-L1102
               </p>
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setShowCloneModal(true)} className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 flex items-center gap-2 shadow-sm text-sm">
-              <Copy size={18} /> Clone Setup
+            <button onClick={() => setShowCloneModal(true)} className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 flex items-center gap-2 shadow-sm text-xs uppercase tracking-widest">
+              <Copy size={16} /> Clone Setup
             </button>
-            <button className="bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 flex items-center gap-2 text-sm">
-              Submit Review <ArrowRight size={18} />
+            <button className="bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 flex items-center gap-2 text-xs uppercase tracking-widest">
+              Final Review <ArrowRight size={16} />
             </button>
           </div>
         </div>
 
-        <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-xl shadow-slate-200/30">
+        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-xl shadow-slate-200/30">
            <LifecycleTracker currentStage={activeLocation.stage} currentState={activeLocation.state} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
            <div className="lg:col-span-8 space-y-8">
-              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                 <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
-                    <h3 className="text-xl font-black text-slate-800 tracking-tight">Location Information</h3>
-                    <Badge variant="indigo">Required</Badge>
-                 </div>
-                 <div className="p-8 space-y-8">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Branch Name</label>
-                        <input type="text" value={activeLocation.name} readOnly className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 font-bold outline-none" />
+              {/* Data Collection Stepper Content */}
+              <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col lg:flex-row min-h-[600px]">
+                {/* Stepper Navigation */}
+                <div className="w-full lg:w-64 bg-slate-50/50 border-r border-slate-100 p-8">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Setup Progress</p>
+                   <div className="space-y-1">
+                     {LOCATION_SECTIONS.map((s, i) => (
+                       <button 
+                        key={s.id}
+                        onClick={() => setActiveStep(i)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left ${activeStep === i ? 'bg-white shadow-sm ring-1 ring-slate-100' : 'hover:bg-slate-100/50'}`}
+                       >
+                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${
+                           activeStep === i ? 'border-blue-600 bg-blue-600 text-white' : 
+                           s.status === 'Complete' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-200 text-slate-400'
+                         }`}>
+                           {s.status === 'Complete' ? <CheckCircle2 size={12} /> : i + 1}
+                         </div>
+                         <span className={`text-[11px] font-black uppercase tracking-tight ${activeStep === i ? 'text-slate-800' : 'text-slate-400'}`}>{s.title}</span>
+                       </button>
+                     ))}
+                   </div>
+                   
+                   <div className="mt-12 p-6 bg-blue-50 rounded-[2rem] border border-blue-100/50">
+                      <p className="text-[9px] font-black text-blue-600 uppercase mb-2">Location Sync</p>
+                      <p className="text-[11px] text-blue-800 leading-relaxed font-medium">Syncing data with BrightSmiles Practice Defaults...</p>
+                      <div className="mt-3 w-full h-1 bg-blue-200 rounded-full overflow-hidden">
+                        <div className="bg-blue-600 h-full w-[82%]"></div>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Service Address</label>
-                        <input type="text" placeholder="123 Dental Lane, Chicago IL 60614" className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold" />
-                      </div>
-                    </div>
+                   </div>
+                </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                        Location Timezone <Badge variant="error">Required</Badge>
-                      </label>
-                      <div className="relative">
-                        <select 
-                          className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold bg-white appearance-none"
-                          defaultValue={activeLocation.timezone || "America/Chicago"}
-                        >
-                          <option value="America/New_York">America/New_York (EST/EDT)</option>
-                          <option value="America/Chicago">America/Chicago (CST/CDT)</option>
-                          <option value="America/Denver">America/Denver (MST/MDT)</option>
-                          <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
-                        </select>
-                        <Globe size={18} className="absolute right-4 top-4 text-slate-400" />
+                {/* Form Body */}
+                <div className="flex-grow p-10 lg:p-14 relative flex flex-col">
+                   <div className="flex-grow">
+                      <div className="mb-10 flex justify-between items-start">
+                        <div>
+                          <Badge variant="indigo">Step {activeStep + 1}</Badge>
+                          <h2 className="text-3xl font-black text-slate-800 mt-2 tracking-tighter">{currentSection.title}</h2>
+                          <p className="text-slate-400 text-sm mt-1">Configure site-specific parameters for this location.</p>
+                        </div>
                       </div>
-                      <p className="text-[10px] text-slate-400 mt-1 italic">Note: Business hours, scheduling, and go-live plans will operate in this timezone.</p>
-                    </div>
-                    
-                    <div className="pt-6 border-t border-slate-100 grid grid-cols-2 gap-6">
-                       <ContactCard title="Primary Location POC" data={PRACTICE_BASE_DATA.poc.primary} />
-                       <ContactCard title="Backup Location POC" />
-                    </div>
-                 </div>
+
+                      {activeStep === 0 && (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                           <FormField label="Branch Name" required inheritance="overridden">
+                              <input type="text" defaultValue={activeLocation.name} className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-blue-100" />
+                           </FormField>
+
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                             <FormField label="Service Address" required inheritance="overridden">
+                                <textarea defaultValue="123 Dental Lane, Chicago IL 60614" className="w-full px-5 py-4 rounded-2xl border border-slate-200 font-bold outline-none h-24 resize-none focus:ring-2 focus:ring-blue-100" />
+                             </FormField>
+
+                             <FormField label="Location Timezone" required inheritance="default" helper="This timezone regulates all automated behaviors.">
+                               <div className="relative">
+                                  <select 
+                                    className="w-full px-5 py-4 rounded-2xl border border-slate-200 font-bold bg-white appearance-none outline-none focus:ring-2 focus:ring-blue-100"
+                                    value={formState.timezone}
+                                    onChange={(e) => handleInputChange('timezone', e.target.value)}
+                                  >
+                                    <option value="America/New_York">America/New_York (EST)</option>
+                                    <option value="America/Chicago">America/Chicago (CST)</option>
+                                    <option value="America/Denver">America/Denver (MST)</option>
+                                    <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                                  </select>
+                                  <Globe size={18} className="absolute right-5 top-4.5 text-slate-300" />
+                               </div>
+                             </FormField>
+                           </div>
+
+                           <div className="pt-8 border-t border-slate-50 grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <ContactCard title="Primary Site POC" data={PRACTICE_BASE_DATA.poc.primary} />
+                              <ContactCard title="Backup Site POC" />
+                           </div>
+                        </div>
+                      )}
+
+                      {activeStep === 1 && (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-8">
+                           <div className="grid grid-cols-2 gap-6">
+                              <FormField label="Existing System" inheritance="default">
+                                 <input type="text" readOnly value="RingCentral" className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 font-bold text-slate-500 outline-none" />
+                              </FormField>
+                              <FormField label="Number of Handsets" required inheritance="overridden" badge="Verify Qty">
+                                 <input type="number" defaultValue={12} className="w-full px-5 py-4 rounded-2xl border border-slate-200 font-bold outline-none focus:ring-2 focus:ring-blue-100" />
+                              </FormField>
+                           </div>
+
+                           <div className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100">
+                              <div className="flex justify-between items-center mb-4 px-2">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Porting Inventory</h4>
+                                <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">+ Add Number</button>
+                              </div>
+                              <div className="space-y-3">
+                                {[
+                                  { n: '(312) 555-0101', t: 'Main Line', s: 'Verified' },
+                                  { n: '(312) 555-0102', t: 'Fax Line', s: 'Pending Bill' },
+                                ].map((item, i) => (
+                                  <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center group">
+                                     <div className="flex items-center gap-4">
+                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Phone size={14}/></div>
+                                        <div>
+                                          <p className="text-sm font-bold text-slate-800">{item.n}</p>
+                                          <p className="text-[10px] text-slate-400 font-medium uppercase">{item.t}</p>
+                                        </div>
+                                     </div>
+                                     <Badge variant={item.s === 'Verified' ? 'success' : 'warning'}>{item.s}</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
+                      {activeStep === 2 && (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-8">
+                           <FormField label="Routing Logic" inheritance="default" helper="Preferred ringing pattern for incoming patient calls.">
+                              <div className="grid grid-cols-2 gap-4">
+                                {['Simultaneous', 'Sequential'].map(mode => (
+                                  <button 
+                                    key={mode}
+                                    onClick={() => handleInputChange('routingPattern', mode)}
+                                    className={`p-5 rounded-3xl border-2 transition-all text-left flex items-start gap-4 ${formState.routingPattern === mode ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+                                  >
+                                    <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${formState.routingPattern === mode ? 'border-blue-600 bg-blue-600' : 'border-slate-200'}`}>
+                                      {formState.routingPattern === mode && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
+                                    <div>
+                                      <p className={`text-sm font-black uppercase tracking-tight ${formState.routingPattern === mode ? 'text-blue-800' : 'text-slate-700'}`}>{mode}</p>
+                                      <p className="text-[10px] text-slate-400 font-medium leading-tight mt-1">{mode === 'Simultaneous' ? 'All handsets ring at once.' : 'Rings extensions in priority order.'}</p>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                           </FormField>
+
+                           <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-slate-900/20">
+                              <div className="flex justify-between items-center mb-6">
+                                <div>
+                                  <h4 className="text-lg font-black tracking-tight">Call Recording</h4>
+                                  <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Practice Policy: Optional</p>
+                                </div>
+                                <div className="flex gap-2 p-1 bg-white/10 rounded-2xl">
+                                   {['Yes', 'No'].map(opt => (
+                                     <button 
+                                      key={opt}
+                                      onClick={() => handleInputChange('recordAll', opt)}
+                                      className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${formState.recordAll === opt ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}
+                                     >
+                                       {opt}
+                                     </button>
+                                   ))}
+                                </div>
+                              </div>
+
+                              {formState.recordAll === 'No' && (
+                                <div className="p-6 bg-white/5 border border-white/10 rounded-3xl animate-in slide-in-from-top-4 duration-300">
+                                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Exclude extensions from recording:</p>
+                                   <div className="grid grid-cols-2 gap-3">
+                                      {['Admin Office', 'Finance Desk', 'Staff Lounge', 'Exam 1'].map(ext => (
+                                        <label key={ext} className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all">
+                                           <input type="checkbox" className="w-4 h-4 rounded accent-blue-600" />
+                                           <span className="text-xs font-bold">{ext}</span>
+                                        </label>
+                                      ))}
+                                   </div>
+                                </div>
+                              )}
+                           </div>
+                           
+                           <div className="grid grid-cols-2 gap-6">
+                              <div className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm flex justify-between items-center">
+                                 <div>
+                                   <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Enable DND</p>
+                                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Global Toggle</p>
+                                 </div>
+                                 <button 
+                                  onClick={() => handleInputChange('dnd', !formState.dnd)}
+                                  className={`w-12 h-6 rounded-full relative transition-all ${formState.dnd ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                                 >
+                                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formState.dnd ? 'right-1' : 'left-1'}`}></div>
+                                 </button>
+                              </div>
+                              <div className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm flex justify-between items-center opacity-50 cursor-not-allowed">
+                                 <div>
+                                   <p className="text-xs font-black text-slate-800 uppercase tracking-tight">After-Hours Routing</p>
+                                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Linked to Schedule</p>
+                                 </div>
+                                 <Lock size={16} className="text-slate-300" />
+                              </div>
+                           </div>
+                        </div>
+                      )}
+                   </div>
+
+                   {/* Onboarding Footer */}
+                   <div className="mt-14 pt-10 border-t border-slate-100 flex justify-between items-center">
+                      <button 
+                        onClick={() => setActiveStep(s => Math.max(0, s - 1))}
+                        className={`px-10 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all ${activeStep === 0 ? 'opacity-0 invisible' : ''}`}
+                      >
+                        Previous
+                      </button>
+                      <div className="flex gap-4">
+                         <button className="px-10 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600">Save Draft</button>
+                         <button 
+                          onClick={() => setActiveStep(s => Math.min(LOCATION_SECTIONS.length - 1, s + 1))}
+                          className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3"
+                         >
+                            {activeStep === LOCATION_SECTIONS.length - 1 ? 'Complete Setup' : 'Save & Next'} <ArrowRight size={16} />
+                         </button>
+                      </div>
+                   </div>
+                </div>
               </div>
 
               {/* Internal Notes at Location Level */}
@@ -591,14 +802,15 @@ export default function App() {
               )}
            </div>
 
+           {/* Location Sidebar */}
            <div className="lg:col-span-4 space-y-8">
               <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-                 <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center justify-between">
+                 <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center justify-between uppercase text-xs tracking-widest">
                     Site Timeline 
                     <History size={18} className="text-slate-300" />
                  </h3>
-                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 flex items-center gap-2">
-                   <Clock size={12} /> ALL TIMES IN {activeLocation.timezone?.split('/')[1]?.replace('_', ' ') || 'LOCAL TIME'}
+                 <p className="text-[10px] font-black text-slate-400 uppercase mb-6 flex items-center gap-2">
+                   <Clock size={12} /> Scheduled in {formState.timezone?.split('/')[1]?.replace('_', ' ') || 'LOCAL TIME'}
                  </p>
                  <div className="space-y-8 relative">
                     <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-50"></div>
@@ -608,7 +820,6 @@ export default function App() {
                       { t: 'Stage: Doc Verification', d: 'Sep 05', s: 'done' },
                       { t: 'Stage: Device Ordering', d: 'Sep 08', s: 'done' },
                       { t: 'Stage: Porting', d: 'Current', s: 'active' },
-                      { t: 'Stage: Pre Go-Live', d: 'Pending', s: 'todo' },
                       { t: 'Stage: Go Live', d: 'Target: Oct 12', s: 'todo' },
                     ].map(ev => (
                       <div key={ev.t} className="relative pl-10">
@@ -619,7 +830,7 @@ export default function App() {
                            {ev.s === 'done' && <CheckCircle2 size={14} className="text-white" />}
                          </div>
                          <div>
-                           <p className={`text-xs font-black uppercase tracking-widest ${ev.s === 'todo' ? 'text-slate-400' : 'text-slate-800'}`}>{ev.t}</p>
+                           <p className={`text-[10px] font-black uppercase tracking-widest ${ev.s === 'todo' ? 'text-slate-300' : 'text-slate-800'}`}>{ev.t}</p>
                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">{ev.d}</p>
                          </div>
                       </div>
@@ -628,7 +839,7 @@ export default function App() {
               </div>
 
               <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-200">
-                 <h4 className="text-lg font-black tracking-tight mb-4">Location Checklist</h4>
+                 <h4 className="text-sm font-black tracking-widest uppercase mb-4">Location Checklist</h4>
                  <div className="space-y-3">
                    {[
                      { l: 'Business Hours Defined', c: true },
@@ -644,6 +855,14 @@ export default function App() {
                         <span className="text-xs font-bold">{item.l}</span>
                      </div>
                    ))}
+                 </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] p-8">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Support Context</h4>
+                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-50 mb-4">
+                    <p className="text-xs font-black text-slate-800 mb-1">Timezone Logic</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">This location is set to **{formState.timezone}**. Ensure your business hours in step 4 reflect the local time of the staff.</p>
                  </div>
               </div>
            </div>
@@ -678,24 +897,15 @@ export default function App() {
              <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Access Scope</label>
                 <div className="grid grid-cols-2 gap-4">
-                   <button className="p-4 border-2 border-blue-600 bg-blue-50 rounded-2xl text-xs font-black text-blue-700 text-left">Full Practice Access</button>
-                   <button className="p-4 border-2 border-slate-100 bg-slate-50 rounded-2xl text-xs font-black text-slate-400 text-left">Specific Locations Only</button>
+                   <button className="p-4 border-2 border-blue-600 bg-blue-50 rounded-2xl text-xs font-black text-blue-700 text-left uppercase">Full Practice Access</button>
+                   <button className="p-4 border-2 border-slate-100 bg-slate-50 rounded-2xl text-xs font-black text-slate-400 text-left uppercase">Specific Sites</button>
                 </div>
-             </div>
-
-             <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Permission Level</label>
-                <select className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none bg-slate-50 font-bold appearance-none">
-                   <option>Workspace Admin (Edit everything)</option>
-                   <option>Contributor (Fill forms only)</option>
-                   <option>Viewer (Read-only)</option>
-                </select>
              </div>
 
              <div className="flex gap-4 pt-6">
                 <button onClick={() => setShowInviteModal(false)} className="flex-1 py-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest">Cancel</button>
-                <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
-                  <Mail size={18} /> Send Invitation
+                <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest">
+                  <Mail size={16} /> Send Invitation
                 </button>
              </div>
           </div>
@@ -708,8 +918,8 @@ export default function App() {
       {/* Role Switcher Bar */}
       <div className="bg-slate-900 text-white py-1.5 px-6 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest sticky top-0 z-[110] border-b border-white/5 shadow-lg">
         <div className="flex gap-6">
-          <span className="text-blue-400 flex items-center gap-2"><Layers size={12}/> Rollout Environment v2.8</span>
-          <span className="text-slate-400">Implementation Portfolio Management</span>
+          <span className="text-blue-400 flex items-center gap-2"><Layers size={12}/> Rollout Environment v2.9</span>
+          <span className="text-slate-400">Implementation Data Collection Active</span>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-slate-500">Security: HIPAA Locked</span>
@@ -782,17 +992,17 @@ export default function App() {
 
           <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-xl shadow-slate-900/10">
              <div className="flex items-center gap-3 mb-4">
-               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs shadow-lg">
+               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs shadow-lg uppercase">
                 {role === ROLES.PRACTICE_ADMIN ? 'SL' : 'MT'}
                </div>
                <div className="overflow-hidden">
-                 <p className="text-xs font-bold truncate">
+                 <p className="text-xs font-bold truncate tracking-tight">
                   {role === ROLES.PRACTICE_ADMIN ? 'Dr. Sarah Lee' : 'Marcus Thompson'}
                  </p>
-                 <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">{role}</p>
+                 <p className="text-[9px] text-blue-400 font-black uppercase tracking-widest mt-0.5">{role}</p>
                </div>
              </div>
-             <button className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:bg-white/10 transition-all">SIGN OUT</button>
+             <button className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:bg-white/10 transition-all uppercase tracking-widest">Sign Out</button>
           </div>
         </nav>
 
@@ -814,7 +1024,7 @@ export default function App() {
               <p className="text-slate-400 text-sm mb-10 leading-relaxed px-4">Save time by copying the configuration from an existing location to this site.</p>
               
               <div className="space-y-3 mb-10">
-                <select className="w-full p-5 border-2 border-slate-100 bg-slate-50 rounded-3xl text-sm font-bold text-slate-700 outline-none appearance-none">
+                <select className="w-full p-5 border-2 border-slate-100 bg-slate-50 rounded-3xl text-sm font-bold text-slate-700 outline-none appearance-none font-bold">
                    <option>Lakeside Specialists (Live)</option>
                    <option>Downtown Main Clinic (95%)</option>
                 </select>
@@ -822,7 +1032,7 @@ export default function App() {
 
               <div className="flex gap-4">
                  <button onClick={() => setShowCloneModal(false)} className="flex-1 py-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest">Cancel</button>
-                 <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all">Apply Setup</button>
+                 <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-widest">Apply Setup</button>
               </div>
            </div>
         </div>
@@ -836,17 +1046,17 @@ export default function App() {
               <p className="text-slate-400 text-sm mb-10 leading-relaxed px-4">Generate an implementation-ready export for your selected rollout scope.</p>
               
               <div className="space-y-3 mb-10">
-                <button className="w-full p-5 border-2 border-blue-600 bg-blue-50/50 rounded-3xl text-sm font-bold text-blue-800 text-left flex justify-between items-center group transition-all">
+                <button className="w-full p-5 border-2 border-blue-600 bg-blue-50/50 rounded-3xl text-sm font-bold text-blue-800 text-left flex justify-between items-center group transition-all font-bold">
                    <div className="flex flex-col">
                       <span>Full Rollout Data</span>
-                      <span className="text-[10px] text-blue-500 font-medium">All 100 Sites + Practice Defaults</span>
+                      <span className="text-[10px] text-blue-500 font-black uppercase">All 100 Sites + Defaults</span>
                    </div>
                    <div className="w-5 h-5 rounded-full border-4 border-blue-600 bg-white" />
                 </button>
-                <button className="w-full p-5 border-2 border-slate-100 bg-slate-50 rounded-3xl text-sm font-bold text-slate-400 text-left flex justify-between items-center hover:border-slate-200 transition-all">
+                <button className="w-full p-5 border-2 border-slate-100 bg-slate-50 rounded-3xl text-sm font-bold text-slate-400 text-left flex justify-between items-center hover:border-slate-200 transition-all font-bold">
                    <div className="flex flex-col">
                       <span>Live Sites Only</span>
-                      <span className="text-[10px] text-slate-400 font-medium">44 Locations • Production Ready</span>
+                      <span className="text-[10px] text-slate-400 font-black uppercase">44 Locations • Ready</span>
                    </div>
                    <div className="w-5 h-5 rounded-full border-2 border-slate-200 bg-white" />
                 </button>
@@ -854,7 +1064,7 @@ export default function App() {
 
               <div className="flex gap-4">
                  <button onClick={() => setShowExportModal(false)} className="flex-1 py-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest">Cancel</button>
-                 <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all">Download .XLSX</button>
+                 <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-widest">Download XLSX</button>
               </div>
            </div>
         </div>
