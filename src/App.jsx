@@ -40,7 +40,10 @@ import {
   Mail,
   Briefcase,
   FileBadge,
-  Tag
+  Tag,
+  Activity,
+  BarChart3,
+  Globe
 } from 'lucide-react';
 
 // --- Constants ---
@@ -91,11 +94,19 @@ const PRACTICE_BASE_DATA = {
   ]
 };
 
+const MOCK_INTERNAL_ACCOUNTS = [
+  { name: 'BrightSmiles Dental Group', sites: 100, live: 24, progress: 34, lead: 'Marcus T.', status: 'Active Rollout', health: 'Healthy' },
+  { name: 'Unity Medical Center', sites: 12, live: 12, progress: 100, lead: 'Sarah J.', status: 'Fully Live', health: 'Healthy' },
+  { name: 'Evergreen Orthodontics', sites: 45, live: 0, progress: 12, lead: 'Marcus T.', status: 'Stalled Intake', health: 'At Risk' },
+  { name: 'North Chicago Pediatrics', sites: 8, live: 4, progress: 50, lead: 'Sarah J.', status: 'In Implementation', health: 'Healthy' },
+  { name: 'Elite Vision Care', sites: 32, live: 0, progress: 5, lead: 'James K.', status: 'Onboarding', health: 'Healthy' },
+];
+
 const MOCK_LOCATIONS = [
-  { id: 1, name: "Downtown Main Clinic", city: "Chicago", stage: 'Porting', state: 'In Progress', progress: 65 },
-  { id: 2, name: "North Hills Pediatric", city: "Evanston", stage: 'Onboarding', state: 'Changes Requested', progress: 15 },
-  { id: 3, name: "Westside Family Dental", city: "Oak Park", stage: 'Device Ordering', state: 'Pending Review', progress: 45 },
-  { id: 4, name: "Lakeside Specialists", city: "Chicago", stage: 'Go Live', state: 'Completed', progress: 100 },
+  { id: 1, name: "Downtown Main Clinic", city: "Chicago", stage: 'Porting', state: 'In Progress', progress: 65, timezone: 'America/Chicago' },
+  { id: 2, name: "North Hills Pediatric", city: "Evanston", stage: 'Onboarding', state: 'Changes Requested', progress: 15, timezone: 'America/Chicago' },
+  { id: 3, name: "Westside Family Dental", city: "Oak Park", stage: 'Device Ordering', state: 'Pending Review', progress: 45, timezone: 'America/Chicago' },
+  { id: 4, name: "Lakeside Specialists", city: "Chicago", stage: 'Go Live', state: 'Completed', progress: 100, timezone: 'America/Chicago' },
 ];
 
 // --- Sub-Components ---
@@ -379,6 +390,108 @@ export default function App() {
     </div>
   );
 
+  const renderInternalDashboard = () => (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <header className="flex justify-between items-end">
+        <div>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tighter">Implementation Registry</h1>
+          <p className="text-slate-500 flex items-center gap-2 mt-1">
+            <Badge variant="indigo">Global Portfolio</Badge>
+            <span className="text-sm font-medium">48 Active Practices • 1,240 Total Locations</span>
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 flex items-center gap-2 shadow-sm">
+            <BarChart3 size={18} /> Global Metrics
+          </button>
+          <button className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-2">
+            <Plus size={18} /> New Account Rollout
+          </button>
+        </div>
+      </header>
+
+      {/* Internal High Level Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { label: 'Active Projects', val: '48', icon: <Layers size={18}/>, color: 'blue' },
+          { label: 'Porting Queue', val: '124', icon: <Phone size={18}/>, color: 'indigo' },
+          { label: 'Pending QA', val: '18', icon: <Eye size={18}/>, color: 'amber' },
+          { label: 'Go-Live (7 Days)', val: '42', icon: <Activity size={18}/>, color: 'emerald' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-5">
+             <div className={`p-4 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl`}>{stat.icon}</div>
+             <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-2xl font-black text-slate-800">{stat.val}</p>
+             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Internal Accounts Registry Table */}
+      <div className="bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
+        <div className="p-6 border-b border-slate-50 bg-slate-50/20 flex justify-between items-center">
+           <h3 className="font-black text-slate-800">Practice Rollout Registry</h3>
+           <div className="flex gap-3">
+              <div className="relative">
+                 <input type="text" placeholder="Search accounts..." className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl w-64 text-sm outline-none focus:ring-1 focus:ring-blue-100 shadow-sm" />
+                 <Search className="absolute left-3.5 top-3.5 text-slate-400" size={16} />
+              </div>
+              <button className="p-2.5 bg-white rounded-xl text-slate-400 border border-slate-100 shadow-sm"><Filter size={20}/></button>
+           </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/50">
+              <tr>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise Practice</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rollout Progress</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Sites</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Operational Status</th>
+                <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Health</th>
+                <th className="px-6 py-5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+               {MOCK_INTERNAL_ACCOUNTS.map((p, i) => (
+                 <tr key={i} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => { setCurrentPage('dashboard'); }}>
+                    <td className="px-6 py-6">
+                       <p className="font-black text-slate-800 text-base">{p.name}</p>
+                       <p className="text-xs text-slate-400 flex items-center gap-1 font-medium">Lead: {p.lead}</p>
+                    </td>
+                    <td className="px-6 py-6">
+                       <div className="flex items-center gap-3">
+                          <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                             <div className={`h-full ${p.health === 'At Risk' ? 'bg-amber-500' : 'bg-indigo-500'}`} style={{ width: `${p.progress}%` }}></div>
+                          </div>
+                          <span className="text-[10px] font-black text-slate-500">{p.progress}%</span>
+                       </div>
+                       <p className="text-[9px] font-black text-slate-400 uppercase mt-1.5">{p.live} of {p.sites} Sites Live</p>
+                    </td>
+                    <td className="px-6 py-6">
+                       <p className="text-sm font-bold text-slate-700">{p.sites} Sites</p>
+                    </td>
+                    <td className="px-6 py-6">
+                       <Badge variant={p.progress === 100 ? 'success' : 'info'}>{p.status}</Badge>
+                    </td>
+                    <td className="px-6 py-6">
+                       <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full ${p.health === 'At Risk' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                          <span className={`text-[10px] font-black uppercase tracking-tight ${p.health === 'At Risk' ? 'text-amber-600' : 'text-emerald-600'}`}>{p.health}</span>
+                       </div>
+                    </td>
+                    <td className="px-6 py-6 text-right pr-10">
+                       <button className="p-3 bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white rounded-2xl transition-all shadow-sm"><ChevronRight size={20}/></button>
+                    </td>
+                 </tr>
+               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderLocationDetail = () => {
     if (!activeLocation) return null;
     return (
@@ -427,6 +540,25 @@ export default function App() {
                         <input type="text" placeholder="123 Dental Lane, Chicago IL 60614" className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold" />
                       </div>
                     </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        Location Timezone <Badge variant="error">Required</Badge>
+                      </label>
+                      <div className="relative">
+                        <select 
+                          className="w-full px-5 py-3.5 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-100 font-bold bg-white appearance-none"
+                          defaultValue={activeLocation.timezone || "America/Chicago"}
+                        >
+                          <option value="America/New_York">America/New_York (EST/EDT)</option>
+                          <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                          <option value="America/Denver">America/Denver (MST/MDT)</option>
+                          <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                        </select>
+                        <Globe size={18} className="absolute right-4 top-4 text-slate-400" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 italic">Note: Business hours, scheduling, and go-live plans will operate in this timezone.</p>
+                    </div>
                     
                     <div className="pt-6 border-t border-slate-100 grid grid-cols-2 gap-6">
                        <ContactCard title="Primary Location POC" data={PRACTICE_BASE_DATA.poc.primary} />
@@ -448,7 +580,7 @@ export default function App() {
                           <span className="font-black text-blue-400">System Bot</span>
                           <span className="text-[10px] text-slate-500 font-bold uppercase">Today 10:45 AM</span>
                        </div>
-                       <p className="text-slate-300 italic leading-relaxed">"Site verified at 123 Dental Lane. IP whitelisting complete. Ready for porting stage."</p>
+                       <p className="text-slate-300 italic leading-relaxed">"Site verified at 123 Dental Lane. IP whitelisting complete. Local timezone confirmed as {activeLocation.timezone}. Ready for porting stage."</p>
                     </div>
                   </div>
                   <div className="relative">
@@ -465,6 +597,9 @@ export default function App() {
                     Site Timeline 
                     <History size={18} className="text-slate-300" />
                  </h3>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 flex items-center gap-2">
+                   <Clock size={12} /> ALL TIMES IN {activeLocation.timezone?.split('/')[1]?.replace('_', ' ') || 'LOCAL TIME'}
+                 </p>
                  <div className="space-y-8 relative">
                     <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-50"></div>
                     {[
@@ -573,8 +708,8 @@ export default function App() {
       {/* Role Switcher Bar */}
       <div className="bg-slate-900 text-white py-1.5 px-6 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest sticky top-0 z-[110] border-b border-white/5 shadow-lg">
         <div className="flex gap-6">
-          <span className="text-blue-400 flex items-center gap-2"><Layers size={12}/> Rollout Environment v2.7</span>
-          <span className="text-slate-400">Internal & Practice Collaborative Shell</span>
+          <span className="text-blue-400 flex items-center gap-2"><Layers size={12}/> Rollout Environment v2.8</span>
+          <span className="text-slate-400">Implementation Portfolio Management</span>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-slate-500">Security: HIPAA Locked</span>
@@ -582,7 +717,10 @@ export default function App() {
             {Object.values(ROLES).map(r => (
               <button 
                 key={r}
-                onClick={() => { setRole(r); setCurrentPage('dashboard'); }}
+                onClick={() => { 
+                  setRole(r); 
+                  setCurrentPage(r === ROLES.INTERNAL_IMPLEMENTATION ? 'internal-dashboard' : 'dashboard'); 
+                }}
                 className={`px-3 py-1 rounded-md transition-all ${role === r ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 {r}
@@ -604,32 +742,54 @@ export default function App() {
           </div>
 
           <div className="space-y-2 flex-grow">
-            <button onClick={() => setCurrentPage('dashboard')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all ${currentPage === 'dashboard' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-                <LayoutDashboard size={20} /> Practice Rollout
-            </button>
-            <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
-                <FileBadge size={20} /> Contract & Billing
-            </button>
-            <button className="w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
-                <div className="flex items-center gap-3"><MapPin size={20} /> Site Portfolio</div>
-                <Badge variant="indigo">100</Badge>
-            </button>
+            {role === ROLES.PRACTICE_ADMIN ? (
+              <>
+                <button onClick={() => setCurrentPage('dashboard')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all ${currentPage === 'dashboard' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
+                    <LayoutDashboard size={20} /> Practice Rollout
+                </button>
+                <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
+                    <FileBadge size={20} /> Contract & Billing
+                </button>
+                <button className="w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
+                    <div className="flex items-center gap-3"><MapPin size={20} /> Site Portfolio</div>
+                    <Badge variant="indigo">100</Badge>
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setCurrentPage('internal-dashboard')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold transition-all ${currentPage === 'internal-dashboard' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
+                    <Layers size={20} /> Account Registry
+                </button>
+                <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
+                    <History size={20} /> Global Review Queue
+                </button>
+                <button className="w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
+                    <div className="flex items-center gap-3"><Users size={20} /> Team Capacity</div>
+                    <Badge variant="success">82%</Badge>
+                </button>
+              </>
+            )}
+            
             <div className="pt-8 border-t border-slate-50 space-y-2">
               <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
                 <MessageSquare size={20} /> Clarifications
               </button>
               <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all">
-                <History size={20} /> Audit Trail
+                <Clock size={20} /> Audit Trail
               </button>
             </div>
           </div>
 
           <div className="bg-slate-900 rounded-[2.5rem] p-6 text-white shadow-xl shadow-slate-900/10">
              <div className="flex items-center gap-3 mb-4">
-               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs shadow-lg">SL</div>
+               <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs shadow-lg">
+                {role === ROLES.PRACTICE_ADMIN ? 'SL' : 'MT'}
+               </div>
                <div className="overflow-hidden">
-                 <p className="text-xs font-bold truncate">Dr. Sarah Lee</p>
-                 <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">Practice Admin</p>
+                 <p className="text-xs font-bold truncate">
+                  {role === ROLES.PRACTICE_ADMIN ? 'Dr. Sarah Lee' : 'Marcus Thompson'}
+                 </p>
+                 <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">{role}</p>
                </div>
              </div>
              <button className="w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-slate-400 hover:bg-white/10 transition-all">SIGN OUT</button>
@@ -639,6 +799,7 @@ export default function App() {
         {/* Content Area */}
         <main className="flex-grow p-6 lg:p-12 overflow-y-auto max-h-screen">
            {currentPage === 'dashboard' && renderPracticeDashboard()}
+           {currentPage === 'internal-dashboard' && renderInternalDashboard()}
            {currentPage === 'location-detail' && renderLocationDetail()}
         </main>
       </div>
