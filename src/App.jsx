@@ -68,6 +68,14 @@ const ROLLOUT_STAGES = [
   'Go Live'
 ];
 
+const STAGE_STATES = [
+  'Not Started',
+  'In Progress',
+  'Pending Review',
+  'Changes Requested',
+  'Completed'
+];
+
 const PRACTICE_BASE_DATA = {
   name: "BrightSmiles Dental Group",
   address: "500 N Michigan Ave, Suite 600, Chicago, IL 60611",
@@ -110,7 +118,7 @@ const PRACTICE_TIMELINE = [
   { event: "Practice Workspace Created", date: "Aug 01, 2024", type: "system" },
   { event: "Shared Practice Setup Completed", date: "Aug 05, 2024", type: "user" },
   { event: "First Location Onboarding Started", date: "Aug 10, 2024", type: "rollout" },
-  { event: "Contract Milestone: 25% Go-Live Reached", date: "Sep 20, 2024", type: "milestone" },
+  { event: "25% Go-Live Reached", date: "Sep 20, 2024", type: "milestone" },
 ];
 
 const LOCATION_SECTIONS = [
@@ -155,8 +163,8 @@ const ContactCard = ({ title, data, isBackup = false, editable = true, onClone }
         <p className="text-sm font-black text-slate-800">{data.name}</p>
         <p className="text-[10px] text-slate-500 font-bold uppercase">{data.role}</p>
         <div className="pt-2 flex flex-col gap-1 border-t border-slate-100/60 mt-2">
-           <div className="flex items-center gap-2 text-[11px] text-slate-600"><Mail size={12}/> {data.email}</div>
-           <div className="flex items-center gap-2 text-[11px] text-slate-600"><Phone size={12}/> {data.phone}</div>
+           <div className="flex items-center gap-2 text-[11px] text-slate-600 font-medium"><Mail size={12}/> {data.email}</div>
+           <div className="flex items-center gap-2 text-[11px] text-slate-600 font-medium"><Phone size={12}/> {data.phone}</div>
         </div>
       </div>
     ) : (
@@ -205,7 +213,7 @@ const SectionMiniStepper = ({ statusArray }) => (
     {statusArray.map((filled, idx) => (
       <div 
         key={idx} 
-        className={`w-5 h-2 rounded-full transition-all ${filled ? 'bg-blue-600 shadow-sm' : 'bg-slate-200'}`}
+        className={`w-4 h-1.5 rounded-full transition-all ${filled ? 'bg-blue-600 shadow-sm' : 'bg-slate-200'}`}
         title={LOCATION_SECTIONS[idx].title}
       />
     ))}
@@ -230,6 +238,18 @@ export default function App() {
   // Filtering States
   const [portfolioFilter, setPortfolioFilter] = useState("");
   const [summaryOwnerFilter, setSummaryOwnerFilter] = useState("All Owners");
+
+  // Form states
+  const [formState, setFormState] = useState({
+    recordAll: "No",
+    routingPattern: "Simultaneous",
+    dnd: true,
+    timezone: "America/Chicago"
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormState(prev => ({ ...prev, [field]: value }));
+  };
 
   const toggleLocationExpand = (id) => {
     setExpandedLocId(expandedLocId === id ? null : id);
@@ -267,9 +287,9 @@ export default function App() {
         <div className="space-y-1">
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">{PRACTICE_BASE_DATA.name} Profile</h1>
           <div className="flex items-center gap-4 text-slate-500 text-sm">
-            <div className="flex items-center gap-1.5"><MapPin size={14} className="text-blue-500" /> {PRACTICE_BASE_DATA.address}</div>
+            <div className="flex items-center gap-1.5 font-medium"><MapPin size={14} className="text-blue-500" /> {PRACTICE_BASE_DATA.address}</div>
             <div className="w-1 h-1 bg-slate-300 rounded-full" />
-            <div className="flex items-center gap-1.5 font-bold text-slate-700 uppercase text-[10px] tracking-widest"><Building2 size={12}/> {PRACTICE_BASE_DATA.totalLocations} Total Locations</div>
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 uppercase text-[10px] tracking-widest"><Building2 size={12}/> {PRACTICE_BASE_DATA.totalLocations} Locations</div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -280,14 +300,14 @@ export default function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
-           <Card title="Entity Identity" icon={Building2}>
+           <Card title="Account Identity" icon={Building2}>
               <div className="grid grid-cols-2 gap-10">
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Practice Name</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Legal Business Name</p>
                     <p className="text-sm font-bold text-slate-800">{PRACTICE_BASE_DATA.name}</p>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Address</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Service Address</p>
                     <p className="text-sm font-bold text-slate-800 leading-relaxed">{PRACTICE_BASE_DATA.address}</p>
                  </div>
               </div>
@@ -295,11 +315,11 @@ export default function App() {
 
            <div className="space-y-4">
               <div className="flex items-center justify-between px-2">
-                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Site Management Portfolio ({MOCK_LOCATIONS.length})</h3>
+                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Site Management Registry ({MOCK_LOCATIONS.length})</h3>
                  <div className="relative">
                     <input 
                       type="text" 
-                      placeholder="Filter sites..." 
+                      placeholder="Filter locations..." 
                       className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-100 w-64 shadow-sm"
                       value={portfolioFilter}
                       onChange={(e) => setPortfolioFilter(e.target.value)}
@@ -309,22 +329,22 @@ export default function App() {
               </div>
               <div className="space-y-3">
                  {filteredPortfolio.map(loc => (
-                   <div key={loc.id} className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden group">
+                   <div key={loc.id} className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden group transition-all">
                       <div onClick={() => toggleLocationExpand(loc.id)} className={`px-8 py-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors ${expandedLocId === loc.id ? 'bg-slate-50/50 border-b border-slate-100' : ''}`}>
                          <div className="flex items-center gap-6">
                             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all"><MapPin size={20}/></div>
                             <div>
                                <p className="text-sm font-black text-slate-800 tracking-tight">{loc.name}</p>
-                               <p className="text-[10px] font-bold text-slate-400 uppercase">{loc.city} • {loc.timezone}</p>
+                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{loc.city} • {loc.timezone}</p>
                             </div>
                          </div>
                          <div className="flex items-center gap-6">
                             <Badge variant="indigo">{loc.stage}</Badge>
-                            <ChevronDown size={20} className={`text-slate-300 transition-transform ${expandedLocId === loc.id ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={20} className={`text-slate-300 transition-transform duration-300 ${expandedLocId === loc.id ? 'rotate-180' : ''}`} />
                          </div>
                       </div>
                       {expandedLocId === loc.id && (
-                        <div className="p-8 grid grid-cols-2 gap-10 animate-in slide-in-from-top-4">
+                        <div className="p-8 grid grid-cols-2 gap-10 animate-in slide-in-from-top-4 duration-300">
                            <div className="space-y-6">
                               <div>
                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Site Identity Details</p>
@@ -356,11 +376,11 @@ export default function App() {
                                        <p className="text-xl font-black text-blue-600">{loc.progress}%</p>
                                     </div>
                                  </div>
-                                 <p className="text-[10px] text-slate-400 mt-4 italic font-medium">Local Config: {loc.pms} • {loc.phoneSys}</p>
+                                 <p className="text-[10px] text-slate-400 mt-4 italic font-medium uppercase tracking-widest">Config: {loc.pms} • {loc.phoneSys}</p>
                               </div>
                               <div className="flex gap-2 mt-6">
                                  <button className="flex-1 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-600 hover:bg-slate-100 transition-all">Profile Edit</button>
-                                 <button onClick={() => { setActiveLocation(loc); setActiveStep(0); setCurrentPage('location-detail'); }} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-100 flex items-center justify-center gap-2 tracking-widest">Workspace <ArrowUpRight size={14}/></button>
+                                 <button onClick={() => { setActiveLocation(loc); setActiveStep(0); setCurrentPage('location-detail'); }} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-100 flex items-center justify-center gap-2 tracking-widest transition-all hover:bg-blue-700">Workspace <ArrowUpRight size={14}/></button>
                               </div>
                            </div>
                         </div>
@@ -433,24 +453,24 @@ export default function App() {
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-y border-slate-100">
               <tr>
-                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Site Identifier</th>
-                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Stage</th>
-                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Section Completion</th>
-                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-right">Completion %</th>
+                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Site Identifier</th>
+                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage</th>
+                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-center tracking-widest">Section Completion</th>
+                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-right tracking-widest">Completion %</th>
                 <th className="px-8 py-4"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
                {MOCK_LOCATIONS.map(loc => (
-                 <tr key={loc.id} className="hover:bg-blue-50/20 group cursor-pointer" onClick={() => { setActiveLocation(loc); setActiveStep(0); setCurrentPage('location-detail'); }}>
+                 <tr key={loc.id} className="hover:bg-blue-50/20 group cursor-pointer transition-colors" onClick={() => { setActiveLocation(loc); setActiveStep(0); setCurrentPage('location-detail'); }}>
                     <td className="px-8 py-5">
                        <p className="text-sm font-black text-slate-800">{loc.name}</p>
-                       <p className="text-[10px] text-slate-400 font-bold uppercase">{loc.city} • {loc.timezone}</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{loc.city} • {loc.timezone}</p>
                     </td>
                     <td className="px-8 py-5">
                        <Badge variant="indigo">{loc.stage}</Badge>
                     </td>
-                    <td className="px-8 py-5 flex justify-center">
+                    <td className="px-8 py-5 flex justify-center items-center">
                        <SectionMiniStepper statusArray={loc.sectionStatus} />
                     </td>
                     <td className="px-8 py-5 text-right font-black text-blue-600 text-sm">
@@ -458,7 +478,7 @@ export default function App() {
                     </td>
                     <td className="px-8 py-5 text-right pr-10">
                        <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                          <ChevronRight size={14} />
+                          <ChevronRight size={18} />
                        </div>
                     </td>
                  </tr>
@@ -485,7 +505,7 @@ export default function App() {
 
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-4 space-y-6">
-           <Card title="Section-wise Population Status" icon={FileCheck}>
+           <Card title="Section Population Status" icon={FileCheck}>
               <div className="space-y-4">
                  {LOCATION_SECTIONS.map(s => (
                    <div key={s.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center group hover:bg-white hover:border-blue-200 transition-all shadow-sm">
@@ -507,8 +527,8 @@ export default function App() {
                     <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Configuration</p>
                     <p className="text-sm font-bold text-slate-800 leading-relaxed">{PRACTICE_BASE_DATA.name}</p>
                  </div>
-                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl font-medium text-xs text-blue-800">
-                    82% population matched. Local overrides identified in 3 locations.
+                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl font-medium text-xs text-blue-800 leading-relaxed">
+                    82% population matched. Local overrides identified in 3 locations for telephony logic.
                  </div>
               </div>
            </Card>
@@ -521,14 +541,14 @@ export default function App() {
                   <select 
                     value={summaryOwnerFilter}
                     onChange={(e) => setSummaryOwnerFilter(e.target.value)}
-                    className="pl-8 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300"
+                    className="pl-9 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300"
                   >
                     <option>All Owners</option>
                     <option>Marcus T.</option>
                     <option>Sarah J.</option>
                     <option>James K.</option>
                   </select>
-                  <Filter size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
+                  <Filter size={12} className="absolute left-3 top-2.5 text-slate-400" />
                 </div>
                 <button onClick={selectAllLocations} className="text-[10px] font-black text-blue-600 uppercase hover:underline">Toggle All</button>
              </div>
@@ -538,10 +558,9 @@ export default function App() {
                     <thead className="bg-slate-50 border-y border-slate-100">
                        <tr>
                           <th className="px-8 py-4 w-10"></th>
-                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Site</th>
-                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Implementation Owner</th>
-                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Setup Progress</th>
-                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-right">Inheritance</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Site</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Implementation Owner</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Inheritance</th>
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -556,16 +575,10 @@ export default function App() {
                             </td>
                             <td className="px-8 py-5">
                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">{loc.owner.charAt(0)}</div>
-                                  <span className="text-xs font-bold text-slate-700">{loc.owner}</span>
-                               </div>
-                            </td>
-                            <td className="px-8 py-5">
-                               <div className="flex items-center gap-2">
-                                  <div className="w-12 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                     <div className="h-full bg-blue-600" style={{ width: `${loc.progress}%` }} />
+                                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 uppercase">
+                                    {loc.owner.split(' ')[0][0]}
                                   </div>
-                                  <span className="text-[10px] font-black text-slate-500">{loc.progress}%</span>
+                                  <span className="text-xs font-bold text-slate-700">{loc.owner}</span>
                                </div>
                             </td>
                             <td className="px-8 py-5 text-right">
@@ -601,18 +614,18 @@ export default function App() {
                <div className="space-y-6">
                   <div className="flex justify-between items-start">
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Status</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Status</p>
                         <p className="text-lg font-black text-slate-800">{PRACTICE_BASE_DATA.contractStatus}</p>
                      </div>
                      <Badge variant="success">ACTIVE</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-100">
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Renewal</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Renewal</p>
                         <p className="text-sm font-bold text-slate-700">{PRACTICE_BASE_DATA.contractRenewal}</p>
                      </div>
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Last Sync</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Last Sync</p>
                         <p className="text-sm font-bold text-slate-700">Aug 12, 2024</p>
                      </div>
                   </div>
@@ -633,7 +646,7 @@ export default function App() {
             <Card title="Uploaded Documentation" icon={FileCheck}>
                <div className="space-y-3">
                   {[
-                    { n: 'Letters of Authorization (Bulk).pdf', s: 'Verified', d: 'Oct 01, 2024' },
+                    { n: 'Letters of Authorization - Bulk.pdf', s: 'Verified', d: 'Oct 01, 2024' },
                     { n: 'Hardware Receipt - Downtown Main.pdf', s: 'Pending Review', d: 'Oct 02, 2024' },
                     { n: 'Practice E911 Certification.pdf', s: 'Verified', d: 'Aug 20, 2024' }
                   ].map((doc, idx) => (
@@ -658,7 +671,7 @@ export default function App() {
     </div>
   );
 
-  // Internal: Registry View
+  // IMPLEMENTATION TEAM: Global Registry View
   const renderInternalRegistry = () => (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       <header className="flex justify-between items-end pb-2 border-b border-slate-200">
@@ -674,12 +687,12 @@ export default function App() {
       <div className="grid grid-cols-4 gap-6">
         {[
           { l: 'Projects', v: '48', i: <Layers size={18}/>, c: 'blue' },
-          { l: 'Porting', v: '124', i: <Phone size={18}/>, c: 'indigo' },
+          { l: 'Porting Tasks', v: '124', i: <Phone size={18}/>, c: 'indigo' },
           { l: 'Reviews', v: '18', i: <Eye size={18}/>, c: 'amber' },
-          { l: 'Go-Live (7D)', v: '42', i: <Activity size={18}/>, c: 'emerald' }
+          { l: 'Launch (7D)', v: '42', i: <Activity size={18}/>, c: 'emerald' }
         ].map((s, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200/60 flex items-center gap-5 shadow-sm hover:border-blue-200 transition-all">
-             <div className={`p-4 bg-${s.c}-50 text-${s.c}-600 rounded-xl shadow-inner`}>{s.i}</div>
+          <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200/60 flex items-center gap-5 shadow-sm">
+             <div className={`p-4 bg-${s.c}-50 text-${s.c}-600 rounded-2xl shadow-inner`}>{s.i}</div>
              <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.l}</p>
                 <p className="text-2xl font-black text-slate-800">{s.v}</p>
@@ -693,9 +706,9 @@ export default function App() {
             <table className="w-full text-left border-collapse">
                <thead className="bg-slate-50 border-y border-slate-100">
                   <tr>
-                     <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Practice Group</th>
-                     <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase">Rollout Status</th>
-                     <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-center">Health</th>
+                     <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Practice Group</th>
+                     <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rollout Status</th>
+                     <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-center tracking-widest">Health</th>
                      <th className="px-8 py-4"></th>
                   </tr>
                </thead>
@@ -718,7 +731,7 @@ export default function App() {
                           <Badge variant={p.health === 'At Risk' ? 'error' : 'success'}>{p.health}</Badge>
                        </td>
                        <td className="px-8 py-6 text-right pr-12 transition-all">
-                          <ChevronRight size={18} className="text-slate-300 inline group-hover:text-blue-600 group-hover:translate-x-1" />
+                          <ChevronRight size={18} className="text-slate-300 inline group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                        </td>
                     </tr>
                   ))}
@@ -729,8 +742,7 @@ export default function App() {
     </div>
   );
 
-  // 4. Updated Location Details / Stepper Workspace
-  const renderLocationDetail = () => {
+  const renderLocationStepper = () => {
     if (!activeLocation) return null;
     const currentSection = LOCATION_SECTIONS[activeStep];
     return (
@@ -745,13 +757,13 @@ export default function App() {
                 <h1 className="text-4xl font-black text-slate-900 tracking-tighter">{activeLocation.name}</h1>
                 <Badge variant={activeLocation.state === 'Completed' ? 'success' : 'warning'}>{activeLocation.state}</Badge>
               </div>
-              <p className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest">
+              <p className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest font-mono">
                 <MapPin size={14} className="text-blue-500" /> {activeLocation.city} • {activeLocation.timezone}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            {/* NEW: Progress Visualization inside Location detail as requested */}
+            {/* PROGRESS VISUALIZATION: Integrated inside location detail as requested */}
             <div className="flex flex-col items-end mr-6 pr-6 border-r border-slate-200">
                <SectionMiniStepper statusArray={activeLocation.sectionStatus} />
                <p className="text-[10px] font-black text-blue-600 uppercase mt-1.5 tracking-widest leading-none">{activeLocation.progress}% COMPLETE</p>
@@ -769,15 +781,15 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
            <div className="lg:col-span-3 space-y-4">
               <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Setup Sequence</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 tracking-widest">Setup Path</p>
                 <div className="space-y-1">
                   {LOCATION_SECTIONS.map((s, i) => (
                     <button 
                       key={s.id}
                       onClick={() => setActiveStep(i)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group ${activeStep === i ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'hover:bg-slate-100'}`}
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group ${activeStep === i ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'hover:bg-slate-100 transition-colors'}`}
                     >
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black border-2 ${activeStep === i ? 'border-white/40 bg-white/20' : 'border-slate-200 text-slate-400 group-hover:border-blue-200 transition-colors'}`}>
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black border-2 ${activeStep === i ? 'border-white/40 bg-white/20' : 'border-slate-200 text-slate-400 group-hover:border-blue-200'}`}>
                         {activeLocation.sectionStatus[i] ? <CheckCircle2 size={12}/> : i + 1}
                       </div>
                       <span className="text-[11px] font-black uppercase tracking-wider">{s.title}</span>
@@ -786,19 +798,20 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 rounded-3xl p-8 text-white">
-                <p className="text-[10px] font-black text-blue-400 uppercase mb-6 tracking-widest">Site Timeline</p>
+              <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/10">
+                <p className="text-[10px] font-black text-blue-400 uppercase mb-6 tracking-widest tracking-widest">Site Timeline</p>
                 <div className="space-y-6 relative ml-1">
                    <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-white/10" />
                    {[
                      { l: 'Intake Initiated', d: 'Aug 10', s: 'done' },
-                     { l: 'Technical Audit', d: 'Current', s: 'active' },
+                     { l: 'Shared Practice Sync', d: 'Aug 12', s: 'done' },
+                     { l: 'Technical Technical Audit', d: 'Current', s: 'active' },
                      { l: 'Target Go-Live', d: 'Oct 12', s: 'todo' },
                    ].map((t, idx) => (
                      <div key={idx} className="relative pl-6">
                         <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 z-10 ${t.s === 'done' ? 'bg-emerald-500' : t.s === 'active' ? 'bg-blue-600 animate-pulse' : 'bg-slate-700'}`} />
                         <p className={`text-[10px] font-black uppercase tracking-tight ${t.s === 'todo' ? 'text-slate-500' : 'text-slate-200'}`}>{t.l}</p>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{t.d}</p>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter mt-1">{t.d}</p>
                      </div>
                    ))}
                 </div>
@@ -809,13 +822,13 @@ export default function App() {
               <div className="mb-12">
                  <Badge variant="indigo">Section {activeStep + 1} of {LOCATION_SECTIONS.length}</Badge>
                  <h2 className="text-4xl font-black text-slate-900 mt-3 tracking-tighter">{currentSection.title}</h2>
-                 <p className="text-slate-400 text-sm mt-2 italic font-medium leading-relaxed">Providing specific requirements for {activeLocation.name}. All progress is saved automatically.</p>
+                 <p className="text-slate-400 text-sm mt-2 italic font-medium leading-relaxed">Providing specific requirements for {activeLocation.name}. Progress is saved to the local site profile.</p>
               </div>
 
               {activeStep === 0 && (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
                   <div className="grid grid-cols-2 gap-10">
-                    <FormField label="Location name" required inheritance="overridden">
+                    <FormField label="Location Name" required inheritance="overridden">
                       <input type="text" defaultValue={activeLocation.name} className="w-full px-5 py-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all shadow-inner" />
                     </FormField>
                     <FormField label="Local Timezone" required inheritance="default">
@@ -830,11 +843,11 @@ export default function App() {
                     </FormField>
                   </div>
                   
-                  <FormField label="Practice Address" required inheritance="overridden" helper="The physical address for localized E911 and carrier registration.">
+                  <FormField label="Practice Address" required inheritance="overridden">
                     <textarea defaultValue={activeLocation.address} className="w-full px-5 py-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none h-24 resize-none focus:ring-2 focus:ring-blue-100 transition-all shadow-inner" />
                   </FormField>
 
-                  <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-50">
+                  <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-100">
                     <FormField label="Primary site Lead" inheritance={null}>
                        <div className="space-y-4">
                           <input type="text" placeholder="Full Name" defaultValue={PRACTICE_BASE_DATA.poc.primary.name} className="w-full px-5 py-3.5 text-sm font-bold bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100" />
@@ -857,12 +870,25 @@ export default function App() {
                 </div>
               )}
 
+              {activeStep === 1 && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
+                   <div className="grid grid-cols-2 gap-10">
+                      <FormField label="Total Handsets" required inheritance="overridden">
+                        <input type="number" defaultValue={12} className="w-full px-5 py-4 text-sm font-bold bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-100 transition-all" />
+                      </FormField>
+                      <FormField label="Device Model" inheritance="default">
+                        <input type="text" readOnly defaultValue="Poly VVX 450" className="w-full px-5 py-4 text-sm font-bold bg-slate-50 border border-slate-100 text-slate-400 rounded-2xl" />
+                      </FormField>
+                   </div>
+                </div>
+              )}
+
               <div className="mt-20 pt-10 border-t border-slate-100 flex justify-between items-center">
                  <button onClick={() => setActiveStep(s => Math.max(0, s - 1))} className={`px-10 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all ${activeStep === 0 ? 'opacity-0 invisible' : ''}`}>
                    Previous
                  </button>
-                 <button onClick={() => setActiveStep(s => Math.min(LOCATION_SECTIONS.length - 1, s + 1))} className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3">
-                    {activeStep === LOCATION_SECTIONS.length - 1 ? 'Save site' : 'Save & Continue'} <ArrowRight size={16} />
+                 <button onClick={() => setActiveStep(s => Math.min(LOCATION_SECTIONS.length - 1, s + 1))} className="bg-blue-600 text-white px-12 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-3 tracking-[0.1em]">
+                    {activeStep === LOCATION_SECTIONS.length - 1 ? 'Finish Workspace' : 'Save & Continue'} <ArrowRight size={16} />
                  </button>
               </div>
            </div>
@@ -871,15 +897,31 @@ export default function App() {
     );
   };
 
+  const renderSidebarItem = (id, label, icon, badge = null) => {
+    const isActive = currentPage === id;
+    return (
+      <button 
+        onClick={() => { setCurrentPage(id); setActiveLocation(null); setInternalTab(id); }}
+        className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider transition-all ${isActive ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+      >
+         <div className="flex items-center gap-4">
+            {React.createElement(icon, { size: 18 })}
+            {label}
+         </div>
+         {badge && <Badge variant="indigo">{badge}</Badge>}
+      </button>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-700">
       <div className="bg-slate-900 text-white py-1.5 px-6 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest sticky top-0 z-[110] border-b border-white/5 shadow-lg">
         <div className="flex gap-6">
-          <span className="text-blue-400 flex items-center gap-2"><Layers size={12}/> Rollout Command v3.9</span>
+          <span className="text-blue-400 flex items-center gap-2 font-bold tracking-widest"><Layers size={12}/> ROLLOUT CONTROL v3.9</span>
         </div>
         <div className="flex gap-1 p-0.5 bg-slate-800 rounded-lg overflow-hidden border border-white/5">
           {Object.values(ROLES).map(r => (
-            <button key={r} onClick={() => { setRole(r); setCurrentPage(r === ROLES.PRACTICE_ADMIN ? 'profile' : 'registry'); }} className={`px-3 py-1 rounded-md transition-all ${role === r ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+            <button key={r} onClick={() => { setRole(r); setCurrentPage(r === ROLES.PRACTICE_ADMIN ? 'profile' : 'registry'); }} className={`px-3 py-1 rounded-md transition-all ${role === r ? 'bg-blue-600 text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-300'}`}>
               {r}
             </button>
           ))}
@@ -889,44 +931,34 @@ export default function App() {
       <div className="flex min-h-screen">
         <nav className="w-80 bg-white border-r border-slate-200/60 p-8 hidden lg:flex flex-col h-screen sticky top-10">
           <div className="flex items-center gap-4 mb-16 px-2">
-            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-100">VS</div>
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-100 transition-transform hover:scale-105">VS</div>
             <div>
               <h2 className="text-xl font-black leading-none tracking-tighter text-slate-900">VoiceStack</h2>
-              <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest mt-1">Rollout Workspace</p>
+              <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest mt-1 font-bold">Onboarding Shell</p>
             </div>
           </div>
           
           <div className="space-y-2 flex-grow">
             {role === ROLES.INTERNAL_IMPLEMENTATION ? (
               <>
-                <button onClick={() => { setCurrentPage('registry'); setInternalTab('overview'); }} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider transition-all ${currentPage === 'registry' ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-                    <Layers size={18} /> Account Registry
-                </button>
+                {renderSidebarItem('registry', 'Implementation Registry', Layers)}
                 <button className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all">
                     <History size={18} /> Global Reviews
                 </button>
               </>
             ) : (
               <>
-                <button onClick={() => { setCurrentPage('profile'); setActiveLocation(null); }} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider transition-all ${currentPage === 'profile' ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-                    <Building2 size={18} /> Practice Profile
-                </button>
-                <button onClick={() => { setCurrentPage('tracker'); setActiveLocation(null); }} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider transition-all ${currentPage === 'tracker' ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-                    <Activity size={18} /> Rollout Tracker
-                </button>
-                <button onClick={() => { setCurrentPage('summary'); setActiveLocation(null); }} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider transition-all ${currentPage === 'summary' ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-                    <ClipboardCheck size={18} /> Setup Summary
-                </button>
-                <button onClick={() => { setCurrentPage('documents'); setActiveLocation(null); }} className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black uppercase text-[11px] tracking-wider transition-all ${currentPage === 'documents' ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-                    <FileBadge size={18} /> Contracts & Docs
-                </button>
+                {renderSidebarItem('profile', 'Practice Profile', Building2)}
+                {renderSidebarItem('tracker', 'Rollout Tracker', Activity)}
+                {renderSidebarItem('summary', 'Setup Summary', ClipboardCheck)}
+                {renderSidebarItem('documents', 'Contracts & Docs', FileBadge)}
               </>
             )}
           </div>
 
           <div className="mt-auto p-4 bg-slate-50 rounded-2xl border border-slate-200/60">
              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-black text-xs text-white shadow-lg uppercase">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-black text-xs text-white shadow-lg uppercase transition-transform hover:scale-110">
                   {role === ROLES.PRACTICE_ADMIN ? 'SL' : 'MT'}
                 </div>
                 <div>
@@ -1005,7 +1037,9 @@ export default function App() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <button onClick={() => setShowSummaryExportModal(false)} className="py-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest tracking-[0.1em] transition-colors">Cancel</button>
-                 <button className="py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-[0.1em]">Download Report</button>
+                 <button className="py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-[0.1em] tracking-widest flex items-center justify-center gap-3 font-bold">
+                   <Download size={16}/> Generate report
+                 </button>
               </div>
            </div>
         </div>
@@ -1016,7 +1050,7 @@ export default function App() {
            <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 animate-in zoom-in-95 duration-400 text-center">
               <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-sm"><Copy size={36}/></div>
               <h3 className="text-2xl font-black text-slate-800 mb-3 tracking-tight uppercase text-xs">Clone Site Stakeholders</h3>
-              <p className="text-slate-400 text-sm mb-10 leading-relaxed px-4">Select source to copy POC and Lead details.</p>
+              <p className="text-slate-400 text-sm mb-10 leading-relaxed px-4 italic font-medium">Select source to copy POC and Lead details.</p>
               <div className="space-y-3 mb-10 text-left">
                 <select className="w-full p-5 border-2 border-slate-100 bg-slate-50 rounded-3xl text-sm font-bold text-slate-700 outline-none appearance-none font-bold shadow-inner">
                    <option>Master Practice Profile</option>
@@ -1026,7 +1060,7 @@ export default function App() {
               </div>
               <div className="flex gap-4">
                  <button onClick={() => setShowCloneModal(false)} className="flex-1 py-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest tracking-[0.1em]">Cancel</button>
-                 <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-widest tracking-[0.1em]">Clone Data</button>
+                 <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-widest tracking-[0.1em] font-bold">Clone Data</button>
               </div>
            </div>
         </div>
@@ -1037,20 +1071,20 @@ export default function App() {
            <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl p-10 animate-in zoom-in-95 duration-400">
               <div className="flex justify-between items-center mb-8">
                  <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Invite Manager</h2>
-                 <button onClick={() => setShowInviteModal(false)} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-600 transition-all"><Plus size={24} className="rotate-45" /></button>
+                 <button onClick={() => setShowInviteModal(false)} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-600 transition-all transition-transform hover:scale-110"><Plus size={24} className="rotate-45" /></button>
               </div>
               <div className="space-y-6">
                  <div className="grid grid-cols-2 gap-4">
                     <FormField label="Full Name" required inheritance={null}>
-                       <input type="text" placeholder="John Doe" className="w-full px-5 py-3.5 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100" />
+                       <input type="text" placeholder="John Doe" className="w-full px-5 py-3.5 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold" />
                     </FormField>
                     <FormField label="Email" required inheritance={null}>
-                       <input type="email" placeholder="john@example.com" className="w-full px-5 py-3.5 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100" />
+                       <input type="email" placeholder="john@example.com" className="w-full px-5 py-3.5 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold" />
                     </FormField>
                  </div>
                  <div className="flex gap-4 pt-6">
                     <button onClick={() => setShowInviteModal(false)} className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all tracking-[0.1em]">Cancel</button>
-                    <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 tracking-[0.1em]">Send Invite</button>
+                    <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 tracking-[0.1em] font-bold">Send Invitation</button>
                  </div>
               </div>
            </div>
