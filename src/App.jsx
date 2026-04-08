@@ -238,6 +238,7 @@ export default function App() {
   // Filtering States
   const [portfolioFilter, setPortfolioFilter] = useState("");
   const [summaryOwnerFilter, setSummaryOwnerFilter] = useState("All Owners");
+  const [trackerOwnerFilter, setTrackerOwnerFilter] = useState("All Owners");
 
   // Form states
   const [formState, setFormState] = useState({
@@ -280,6 +281,12 @@ export default function App() {
     );
   }, [summaryOwnerFilter]);
 
+  const filteredTracker = useMemo(() => {
+    return MOCK_LOCATIONS.filter(l => 
+      trackerOwnerFilter === "All Owners" || l.owner === trackerOwnerFilter
+    );
+  }, [trackerOwnerFilter]);
+
   // DASHBOARD 1: Practice Profile
   const renderPracticeProfile = () => (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
@@ -300,14 +307,14 @@ export default function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
-           <Card title="Account Identity" icon={Building2}>
+           <Card title="Entity Identity" icon={Building2}>
               <div className="grid grid-cols-2 gap-10">
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Legal Business Name</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Practice Name</p>
                     <p className="text-sm font-bold text-slate-800">{PRACTICE_BASE_DATA.name}</p>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Service Address</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Address</p>
                     <p className="text-sm font-bold text-slate-800 leading-relaxed">{PRACTICE_BASE_DATA.address}</p>
                  </div>
               </div>
@@ -315,7 +322,7 @@ export default function App() {
 
            <div className="space-y-4">
               <div className="flex items-center justify-between px-2">
-                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Site Management Registry ({MOCK_LOCATIONS.length})</h3>
+                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Site Management Portfolio ({MOCK_LOCATIONS.length})</h3>
                  <div className="relative">
                     <input 
                       type="text" 
@@ -335,12 +342,12 @@ export default function App() {
                             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all"><MapPin size={20}/></div>
                             <div>
                                <p className="text-sm font-black text-slate-800 tracking-tight">{loc.name}</p>
-                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{loc.city} • {loc.timezone}</p>
+                               <p className="text-[10px] font-bold text-slate-400 uppercase">{loc.city} • {loc.timezone}</p>
                             </div>
                          </div>
                          <div className="flex items-center gap-6">
                             <Badge variant="indigo">{loc.stage}</Badge>
-                            <ChevronDown size={20} className={`text-slate-300 transition-transform duration-300 ${expandedLocId === loc.id ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={20} className={`text-slate-300 transition-transform ${expandedLocId === loc.id ? 'rotate-180' : ''}`} />
                          </div>
                       </div>
                       {expandedLocId === loc.id && (
@@ -448,12 +455,29 @@ export default function App() {
         </div>
       </Card>
 
-      <Card title="Operational Status Board" icon={Layers}>
+      <Card title="Operational Status Board" icon={Layers} action={
+        <div className="flex gap-3 items-center">
+           <div className="relative">
+              <select 
+                value={trackerOwnerFilter}
+                onChange={(e) => setTrackerOwnerFilter(e.target.value)}
+                className="pl-9 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300"
+              >
+                <option>All Owners</option>
+                <option>Marcus T.</option>
+                <option>Sarah J.</option>
+                <option>James K.</option>
+              </select>
+              <Filter size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
+           </div>
+        </div>
+      }>
         <div className="overflow-x-auto -mx-6 -mb-6">
           <table className="w-full text-left">
             <thead className="bg-slate-50 border-y border-slate-100">
               <tr>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Site Identifier</th>
+                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Owner</th>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage</th>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-center tracking-widest">Section Completion</th>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-right tracking-widest">Completion %</th>
@@ -461,11 +485,19 @@ export default function App() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-               {MOCK_LOCATIONS.map(loc => (
+               {filteredTracker.map(loc => (
                  <tr key={loc.id} className="hover:bg-blue-50/20 group cursor-pointer transition-colors" onClick={() => { setActiveLocation(loc); setActiveStep(0); setCurrentPage('location-detail'); }}>
                     <td className="px-8 py-5">
                        <p className="text-sm font-black text-slate-800">{loc.name}</p>
                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{loc.city} • {loc.timezone}</p>
+                    </td>
+                    <td className="px-8 py-5 text-center">
+                       <div className="flex items-center justify-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-black text-slate-500 border border-slate-200">
+                            {loc.owner.charAt(0)}
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-600 uppercase">{loc.owner.split(' ')[0]}</span>
+                       </div>
                     </td>
                     <td className="px-8 py-5">
                        <Badge variant="indigo">{loc.stage}</Badge>
@@ -548,7 +580,7 @@ export default function App() {
                     <option>Sarah J.</option>
                     <option>James K.</option>
                   </select>
-                  <Filter size={12} className="absolute left-3 top-2.5 text-slate-400" />
+                  <Filter size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
                 </div>
                 <button onClick={selectAllLocations} className="text-[10px] font-black text-blue-600 uppercase hover:underline">Toggle All</button>
              </div>
@@ -731,7 +763,7 @@ export default function App() {
                           <Badge variant={p.health === 'At Risk' ? 'error' : 'success'}>{p.health}</Badge>
                        </td>
                        <td className="px-8 py-6 text-right pr-12 transition-all">
-                          <ChevronRight size={18} className="text-slate-300 inline group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                          <ChevronRight size={18} className="text-slate-300 inline group-hover:text-blue-600 group-hover:translate-x-1" />
                        </td>
                     </tr>
                   ))}
