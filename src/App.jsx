@@ -302,7 +302,7 @@ export default function App() {
           <div className="flex items-center gap-4 text-slate-500 text-sm">
             <div className="flex items-center gap-1.5 font-medium"><MapPin size={14} className="text-blue-500" /> {PRACTICE_BASE_DATA.address}</div>
             <div className="w-1 h-1 bg-slate-300 rounded-full" />
-            <div className="flex items-center gap-1.5 font-bold text-slate-700 uppercase text-[10px] tracking-widest"><Building2 size={12}/> {PRACTICE_BASE_DATA.totalLocations} Total Locations</div>
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 uppercase text-[10px] tracking-widest"><Building2 size={12}/> {PRACTICE_BASE_DATA.totalLocations} Locations</div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -398,7 +398,7 @@ export default function App() {
                                  <div className="flex justify-between items-start">
                                     <div>
                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">State</p>
-                                       <Badge variant={loc.state === 'Completed' ? 'success' : 'warning'}>{loc.state}</Badge>
+                                       <Badge variant={loc.state === 'Completed' ? 'success' : 'warning'}>{loc.stage}</Badge>
                                     </div>
                                     <div className="text-right">
                                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Progress</p>
@@ -444,7 +444,7 @@ export default function App() {
     </div>
   );
 
-  // DASHBOARD 2: Rollout Tracker (With Owner Column & Filter)
+  // DASHBOARD 2: Rollout Tracker (Merged Stage & Progress Column)
   const renderRolloutTracker = () => (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       <header className="flex justify-between items-end pb-2 border-b border-slate-200">
@@ -500,8 +500,7 @@ export default function App() {
               <tr>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Site Identifier</th>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Owner</th>
-                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage</th>
-                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-center tracking-widest">Section Completion</th>
+                <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rollout Stage & Progress</th>
                 <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase text-right tracking-widest">Completion %</th>
                 <th className="px-8 py-4"></th>
               </tr>
@@ -522,10 +521,13 @@ export default function App() {
                        </div>
                     </td>
                     <td className="px-8 py-5">
-                       <Badge variant="indigo">{loc.stage}</Badge>
-                    </td>
-                    <td className="px-8 py-5 flex justify-center items-center">
-                       <SectionMiniStepper statusArray={loc.sectionStatus} currentIdx={loc.currentSectionIdx} />
+                       <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-blue-600 shadow-sm" />
+                             <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{loc.stage}</span>
+                          </div>
+                          <SectionMiniStepper statusArray={loc.sectionStatus} currentIdx={loc.currentSectionIdx} />
+                       </div>
                     </td>
                     <td className="px-8 py-5 text-right font-black text-blue-600 text-sm">
                        {loc.progress}%
@@ -679,7 +681,7 @@ export default function App() {
                   <div className="flex justify-between items-start">
                      <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Status</p>
-                        <p className="text-lg font-black text-slate-800">{PRACTICE_BASE_DATA.contractStatus}</p>
+                        <p className="text-lg font-black text-slate-800 tracking-tight">{PRACTICE_BASE_DATA.contractStatus}</p>
                      </div>
                      <Badge variant="success">ACTIVE</Badge>
                   </div>
@@ -694,7 +696,7 @@ export default function App() {
                      </div>
                   </div>
                   <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl">
-                     <FileText size={18}/> Download MSA (PDF)
+                     <FileText size={18}/> Download Master MSA
                   </button>
                </div>
             </Card>
@@ -753,7 +755,7 @@ export default function App() {
           { l: 'Projects', v: '48', i: <Layers size={18}/>, c: 'blue' },
           { l: 'Porting Tasks', v: '124', i: <Phone size={18}/>, c: 'indigo' },
           { l: 'Reviews', v: '18', i: <Eye size={18}/>, c: 'amber' },
-          { l: 'Go-Live (7D)', v: '42', i: <Activity size={18}/>, c: 'emerald' }
+          { l: 'Launch (7D)', v: '42', i: <Activity size={18}/>, c: 'emerald' }
         ].map((s, idx) => (
           <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200/60 flex items-center gap-5 shadow-sm">
              <div className={`p-4 bg-${s.c}-50 text-${s.c}-600 rounded-2xl shadow-inner`}>{s.i}</div>
@@ -861,30 +863,11 @@ export default function App() {
                   ))}
                 </div>
               </div>
-
-              <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/10">
-                <p className="text-[10px] font-black text-blue-400 uppercase mb-6 tracking-widest tracking-widest">Site Timeline</p>
-                <div className="space-y-6 relative ml-1">
-                   <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-white/10" />
-                   {[
-                     { l: 'Intake Initiated', d: 'Aug 10', s: 'done' },
-                     { l: 'Shared Practice Sync', d: 'Aug 12', s: 'done' },
-                     { l: 'Technical Technical Audit', d: 'Current', s: 'active' },
-                     { l: 'Target Go-Live', d: 'Oct 12', s: 'todo' },
-                   ].map((t, idx) => (
-                     <div key={idx} className="relative pl-6">
-                        <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 z-10 ${t.s === 'done' ? 'bg-emerald-500' : t.s === 'active' ? 'bg-blue-600 animate-pulse' : 'bg-slate-700'}`} />
-                        <p className={`text-[10px] font-black uppercase tracking-tight ${t.s === 'todo' ? 'text-slate-500' : 'text-slate-200'}`}>{t.l}</p>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter mt-1">{t.d}</p>
-                     </div>
-                   ))}
-                </div>
-              </div>
            </div>
 
            <div className="lg:col-span-9 bg-white rounded-[3rem] border border-slate-200 shadow-sm p-12 lg:p-16">
               <div className="mb-12">
-                 <Badge variant="indigo">Section {activeStep + 1} of {LOCATION_SECTIONS.length}</Badge>
+                 <Badge variant="indigo">Step {activeStep + 1} of {LOCATION_SECTIONS.length}</Badge>
                  <h2 className="text-4xl font-black text-slate-900 mt-3 tracking-tighter">{currentSection.title}</h2>
                  <p className="text-slate-400 text-sm mt-2 italic font-medium leading-relaxed">Providing specific requirements for {activeLocation.name}. Progress is saved to the local site profile.</p>
               </div>
@@ -993,7 +976,7 @@ export default function App() {
                     <p className="text-sm text-slate-400 font-medium">Location-wise completion status for this specific section</p>
                   </div>
                </div>
-               <button onClick={() => setShowSectionDetailModal(null)} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-600 transition-all"><Plus size={24} className="rotate-45" /></button>
+               <button onClick={() => setShowSectionDetailModal(null)} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 transition-all"><Plus size={24} className="rotate-45" /></button>
             </div>
             <div className="p-0 max-h-[60vh] overflow-y-auto no-scrollbar">
                <table className="w-full text-left">
@@ -1149,7 +1132,7 @@ export default function App() {
                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{selectedLocations.length} Sites Selected</p>
                       </div>
                    </div>
-                   <div className={`w-4 h-4 rounded-full border-4 border-blue-600 bg-white ${exportScope === 'selected' ? 'border-blue-600' : 'border-slate-200'}`} />
+                   <div className={`w-4 h-4 rounded-full border-4 bg-white ${exportScope === 'selected' ? 'border-blue-600' : 'border-slate-200'}`} />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
