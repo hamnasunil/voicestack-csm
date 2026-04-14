@@ -587,7 +587,7 @@ export default function App() {
            <Card title="Practice Overview" icon={Building2}>
               <div className="space-y-6">
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Primary Entity</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Primary Entity</p>
                     <p className="text-sm font-bold text-slate-800 leading-relaxed">{PRACTICE_BASE_DATA.name}</p>
                  </div>
                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl font-medium text-xs text-blue-800 leading-relaxed">
@@ -691,7 +691,7 @@ export default function App() {
                         <p className="text-sm font-bold text-slate-700">{PRACTICE_BASE_DATA.contractRenewal}</p>
                      </div>
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">HubSpot Deal</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">HubSpot Deal</p>
                         <a href={PRACTICE_BASE_DATA.hubspotUrl} target="_blank" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">Deal Context <ExternalLink size={12}/></a>
                      </div>
                   </div>
@@ -829,10 +829,20 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-2">
-            {/* PROGRESS VISUALIZATION: Integrated inside location detail as requested */}
-            <div className="flex flex-col items-end mr-6 pr-6 border-r border-slate-200">
-               <SectionMiniStepper statusArray={activeLocation.sectionStatus} currentIdx={activeLocation.currentSectionIdx} />
-               <p className="text-[10px] font-black text-blue-600 uppercase mt-1.5 tracking-widest leading-none">{activeLocation.progress}% COMPLETE</p>
+            {/* PROGRESS VISUALIZATION: Integration with Current Section Name */}
+            <div className="flex items-center gap-8 mr-6 pr-6 border-r border-slate-200">
+               <div className="text-right">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Progress</p>
+                  <div className="flex items-center justify-end gap-3">
+                     <span className="text-2xl font-black text-blue-600 leading-none">{activeLocation.progress}%</span>
+                     <SectionMiniStepper statusArray={activeLocation.sectionStatus} currentIdx={activeStep} />
+                  </div>
+               </div>
+               <div className="h-10 w-px bg-slate-100" />
+               <div className="text-left">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Working On</p>
+                  <p className="text-sm font-black text-slate-800 uppercase tracking-tight tracking-widest">{currentSection.title}</p>
+               </div>
             </div>
             
             <button onClick={() => setShowCloneModal(true)} className="px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-600 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm tracking-[0.1em]">
@@ -863,13 +873,31 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/10">
+                <p className="text-[10px] font-black text-blue-400 uppercase mb-6 tracking-widest tracking-widest">Site Timeline</p>
+                <div className="space-y-6 relative ml-1">
+                   <div className="absolute left-[7px] top-1 bottom-1 w-0.5 bg-white/10" />
+                   {[
+                     { l: 'Intake Initiated', d: 'Aug 10', s: 'done' },
+                     { l: 'Technical Audit', d: 'Current', s: 'active' },
+                     { l: 'Target Go-Live', d: 'Oct 12', s: 'todo' },
+                   ].map((t, idx) => (
+                     <div key={idx} className="relative pl-6">
+                        <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 z-10 ${t.s === 'done' ? 'bg-emerald-500' : t.s === 'active' ? 'bg-blue-600 animate-pulse' : 'bg-slate-700'}`} />
+                        <p className={`text-[10px] font-black uppercase tracking-tight ${t.s === 'todo' ? 'text-slate-500' : 'text-slate-200'}`}>{t.l}</p>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter mt-1">{t.d}</p>
+                     </div>
+                   ))}
+                </div>
+              </div>
            </div>
 
            <div className="lg:col-span-9 bg-white rounded-[3rem] border border-slate-200 shadow-sm p-12 lg:p-16">
               <div className="mb-12">
-                 <Badge variant="indigo">Step {activeStep + 1} of {LOCATION_SECTIONS.length}</Badge>
+                 <Badge variant="indigo">Section {activeStep + 1} of {LOCATION_SECTIONS.length}</Badge>
                  <h2 className="text-4xl font-black text-slate-900 mt-3 tracking-tighter">{currentSection.title}</h2>
-                 <p className="text-slate-400 text-sm mt-2 italic font-medium leading-relaxed">Providing specific requirements for {activeLocation.name}. Progress is saved to the local site profile.</p>
+                 <p className="text-slate-400 text-sm mt-2 italic font-medium leading-relaxed">Providing specific requirements for {activeLocation.name}. All progress is saved automatically.</p>
               </div>
 
               {activeStep === 0 && (
@@ -894,7 +922,7 @@ export default function App() {
                     <textarea defaultValue={activeLocation.address} className="w-full px-5 py-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none h-24 resize-none focus:ring-2 focus:ring-blue-100 transition-all shadow-inner" />
                   </FormField>
 
-                  <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-50">
+                  <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-100">
                     <FormField label="Primary site Lead" inheritance={null}>
                        <div className="space-y-4">
                           <input type="text" placeholder="Full Name" defaultValue={PRACTICE_BASE_DATA.poc.primary.name} className="w-full px-5 py-3.5 text-sm font-bold bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100" />
