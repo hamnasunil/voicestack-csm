@@ -48,7 +48,9 @@ import {
   ChevronDown,
   Trash2,
   MoreVertical,
-  UserCheck
+  UserCheck,
+  ExternalLink,
+  Target
 } from 'lucide-react';
 
 // --- Constants & Data ---
@@ -68,20 +70,13 @@ const ROLLOUT_STAGES = [
   'Go Live'
 ];
 
-const STAGE_STATES = [
-  'Not Started',
-  'In Progress',
-  'Pending Review',
-  'Changes Requested',
-  'Completed'
-];
-
 const PRACTICE_BASE_DATA = {
   name: "BrightSmiles Dental Group",
   address: "500 N Michigan Ave, Suite 600, Chicago, IL 60611",
   totalLocations: 100,
   prefContact: "Email",
   sharedProgress: 82,
+  hubspotUrl: "https://app.hubspot.com/contacts/12345/deal/67890",
   contractStatus: "Active - Annual Enterprise",
   contractRenewal: "Aug 12, 2025",
   salesNotes: "Aggressive expansion planned for Q4. Focus on high-quality audio branding. Primary competitor was RingCentral.",
@@ -101,10 +96,10 @@ const PRACTICE_BASE_DATA = {
 };
 
 const MOCK_LOCATIONS = [
-  { id: 1, name: "Downtown Main Clinic", address: "123 Main St, Chicago, IL 60601", city: "Chicago", stage: 'Porting', state: 'In Progress', progress: 65, timezone: 'America/Chicago', pms: 'Dentrix', phoneSys: 'RingCentral', owner: 'Marcus T.', sectionStatus: [1, 1, 1, 0, 0, 0] },
-  { id: 2, name: "North Hills Pediatric", address: "456 North Rd, Evanston, IL 60201", city: "Evanston", stage: 'Onboarding', state: 'Changes Requested', progress: 15, timezone: 'America/Chicago', pms: 'Eaglesoft', phoneSys: 'Traditional', owner: 'Sarah J.', sectionStatus: [1, 0, 0, 0, 0, 0] },
-  { id: 3, name: "Westside Family Dental", address: "789 West Blvd, Oak Park, IL 60301", city: "Oak Park", stage: 'Device Ordering', state: 'Pending Review', progress: 45, timezone: 'America/Chicago', pms: 'Dentrix', phoneSys: 'VOIP', owner: 'Marcus T.', sectionStatus: [1, 1, 0, 0, 0, 0] },
-  { id: 4, name: "Lakeside Specialists", address: "101 Lake Dr, Chicago, IL 60611", city: "Chicago", stage: 'Go Live', state: 'Completed', progress: 100, timezone: 'America/Chicago', pms: 'Dentrix', phoneSys: 'Nextiva', owner: 'James K.', sectionStatus: [1, 1, 1, 1, 1, 1] },
+  { id: 1, name: "Downtown Main Clinic", address: "123 Main St, Chicago, IL 60601", city: "Chicago", stage: 'Porting', state: 'In Progress', progress: 65, timezone: 'America/Chicago', pms: 'Dentrix', prevPhoneSys: 'Cisco Hosted', phoneSys: 'RingCentral', owner: 'Marcus T.', currentSectionIdx: 2, sectionStatus: [1, 1, 0, 0, 0, 0] },
+  { id: 2, name: "North Hills Pediatric", address: "456 North Rd, Evanston, IL 60201", city: "Evanston", stage: 'Onboarding', state: 'Changes Requested', progress: 15, timezone: 'America/Chicago', pms: 'Eaglesoft', prevPhoneSys: 'Comcast Business', phoneSys: 'Traditional', owner: 'Sarah J.', currentSectionIdx: 0, sectionStatus: [0, 0, 0, 0, 0, 0] },
+  { id: 3, name: "Westside Family Dental", address: "789 West Blvd, Oak Park, IL 60301", city: "Oak Park", stage: 'Device Ordering', state: 'Pending Review', progress: 45, timezone: 'America/Chicago', pms: 'Dentrix', prevPhoneSys: 'Intermedia', phoneSys: 'VOIP', owner: 'Marcus T.', currentSectionIdx: 1, sectionStatus: [1, 0, 0, 0, 0, 0] },
+  { id: 4, name: "Lakeside Specialists", address: "101 Lake Dr, Chicago, IL 60611", city: "Chicago", stage: 'Go Live', state: 'Completed', progress: 100, timezone: 'America/Chicago', pms: 'Dentrix', prevPhoneSys: 'Nextiva (Legacy)', phoneSys: 'Nextiva', owner: 'James K.', currentSectionIdx: 5, sectionStatus: [1, 1, 1, 1, 1, 1] },
 ];
 
 const MOCK_INTERNAL_ACCOUNTS = [
@@ -118,7 +113,7 @@ const PRACTICE_TIMELINE = [
   { event: "Practice Workspace Created", date: "Aug 01, 2024", type: "system" },
   { event: "Shared Practice Setup Completed", date: "Aug 05, 2024", type: "user" },
   { event: "First Location Onboarding Started", date: "Aug 10, 2024", type: "rollout" },
-  { event: "25% Go-Live Reached", date: "Sep 20, 2024", type: "milestone" },
+  { event: "Contract Milestone: 25% Go-Live Reached", date: "Sep 20, 2024", type: "milestone" },
 ];
 
 const LOCATION_SECTIONS = [
@@ -175,10 +170,13 @@ const ContactCard = ({ title, data, isBackup = false, editable = true, onClone }
   </div>
 );
 
-const Card = ({ children, title, icon: Icon, action, className = "" }) => (
+const Card = ({ children, title, icon: Icon, action, className = "", onClickHeader }) => (
   <div className={`bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden ${className}`}>
     {(title || Icon) && (
-      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div 
+        className={`px-6 py-4 border-b border-slate-100 flex items-center justify-between ${onClickHeader ? 'cursor-pointer hover:bg-slate-50 transition-colors' : ''}`}
+        onClick={onClickHeader}
+      >
         <div className="flex items-center gap-2">
           {Icon && <Icon size={16} className="text-slate-400" />}
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{title}</h3>
@@ -208,14 +206,21 @@ const FormField = ({ label, helper, children, required, inheritance = 'default' 
   </div>
 );
 
-const SectionMiniStepper = ({ statusArray }) => (
+const SectionMiniStepper = ({ statusArray, currentIdx }) => (
   <div className="flex items-center gap-1.5">
     {statusArray.map((filled, idx) => (
       <div 
         key={idx} 
-        className={`w-4 h-1.5 rounded-full transition-all ${filled ? 'bg-blue-600 shadow-sm' : 'bg-slate-200'}`}
-        title={LOCATION_SECTIONS[idx].title}
-      />
+        className={`w-4 h-1.5 rounded-full transition-all relative ${
+          idx === currentIdx ? 'bg-white border-2 border-blue-600 ring-1 ring-blue-200 animate-pulse' :
+          filled ? 'bg-blue-600 shadow-sm' : 'bg-slate-200'
+        }`}
+        title={`${LOCATION_SECTIONS[idx].title}${idx === currentIdx ? ' (Current Stage)' : ''}`}
+      >
+        {idx === currentIdx && (
+           <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
+        )}
+      </div>
     ))}
   </div>
 );
@@ -230,6 +235,7 @@ export default function App() {
   const [expandedLocId, setExpandedLocId] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSummaryExportModal, setShowSummaryExportModal] = useState(false);
+  const [showSectionDetailModal, setShowSectionDetailModal] = useState(null); // section object or null
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [internalTab, setInternalTab] = useState('profile');
   const [exportScope, setExportScope] = useState('entire');
@@ -296,7 +302,7 @@ export default function App() {
           <div className="flex items-center gap-4 text-slate-500 text-sm">
             <div className="flex items-center gap-1.5 font-medium"><MapPin size={14} className="text-blue-500" /> {PRACTICE_BASE_DATA.address}</div>
             <div className="w-1 h-1 bg-slate-300 rounded-full" />
-            <div className="flex items-center gap-1.5 font-bold text-slate-700 uppercase text-[10px] tracking-widest"><Building2 size={12}/> {PRACTICE_BASE_DATA.totalLocations} Locations</div>
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 uppercase text-[10px] tracking-widest"><Building2 size={12}/> {PRACTICE_BASE_DATA.totalLocations} Total Locations</div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -307,15 +313,25 @@ export default function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
-           <Card title="Entity Identity" icon={Building2}>
+           <Card title="Account Identity & Integration" icon={Building2}>
               <div className="grid grid-cols-2 gap-10">
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Practice Name</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Master Entity</p>
                     <p className="text-sm font-bold text-slate-800">{PRACTICE_BASE_DATA.name}</p>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{PRACTICE_BASE_DATA.address}</p>
                  </div>
-                 <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Address</p>
-                    <p className="text-sm font-bold text-slate-800 leading-relaxed">{PRACTICE_BASE_DATA.address}</p>
+                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest flex items-center gap-2"><Target size={12}/> HubSpot Intelligence</p>
+                    <div className="flex items-center gap-3">
+                       <input 
+                        type="text" 
+                        readOnly 
+                        defaultValue={PRACTICE_BASE_DATA.hubspotUrl} 
+                        className="flex-grow bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[11px] font-mono text-blue-600" 
+                       />
+                       <a href={PRACTICE_BASE_DATA.hubspotUrl} target="_blank" className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600"><ExternalLink size={14}/></a>
+                    </div>
+                    <p className="text-[9px] text-slate-400 mt-2 italic">Deal linked from HubSpot CRM for contract validation.</p>
                  </div>
               </div>
            </Card>
@@ -326,7 +342,7 @@ export default function App() {
                  <div className="relative">
                     <input 
                       type="text" 
-                      placeholder="Filter locations..." 
+                      placeholder="Filter by name/city..." 
                       className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-100 w-64 shadow-sm"
                       value={portfolioFilter}
                       onChange={(e) => setPortfolioFilter(e.target.value)}
@@ -342,20 +358,26 @@ export default function App() {
                             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all"><MapPin size={20}/></div>
                             <div>
                                <p className="text-sm font-black text-slate-800 tracking-tight">{loc.name}</p>
-                               <p className="text-[10px] font-bold text-slate-400 uppercase">{loc.city} • {loc.timezone}</p>
+                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{loc.city} • {loc.timezone}</p>
                             </div>
                          </div>
                          <div className="flex items-center gap-6">
                             <Badge variant="indigo">{loc.stage}</Badge>
-                            <ChevronDown size={20} className={`text-slate-300 transition-transform ${expandedLocId === loc.id ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={20} className={`text-slate-300 transition-transform duration-300 ${expandedLocId === loc.id ? 'rotate-180' : ''}`} />
                          </div>
                       </div>
                       {expandedLocId === loc.id && (
                         <div className="p-8 grid grid-cols-2 gap-10 animate-in slide-in-from-top-4 duration-300">
                            <div className="space-y-6">
-                              <div>
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Site Identity Details</p>
-                                 <p className="text-xs font-bold text-slate-700 leading-relaxed">{loc.address}</p>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Previous System</p>
+                                    <p className="text-xs font-bold text-slate-700">{loc.prevPhoneSys}</p>
+                                 </div>
+                                 <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">PMS Details</p>
+                                    <p className="text-xs font-bold text-slate-700">{loc.pms}</p>
+                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
                                  <ContactCard 
@@ -375,15 +397,15 @@ export default function App() {
                               <div>
                                  <div className="flex justify-between items-start">
                                     <div>
-                                       <p className="text-[10px] font-black text-slate-400 uppercase mb-1">State</p>
+                                       <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">State</p>
                                        <Badge variant={loc.state === 'Completed' ? 'success' : 'warning'}>{loc.state}</Badge>
                                     </div>
                                     <div className="text-right">
-                                       <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total progress</p>
+                                       <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Progress</p>
                                        <p className="text-xl font-black text-blue-600">{loc.progress}%</p>
                                     </div>
                                  </div>
-                                 <p className="text-[10px] text-slate-400 mt-4 italic font-medium uppercase tracking-widest">Config: {loc.pms} • {loc.phoneSys}</p>
+                                 <p className="text-[10px] text-slate-400 mt-4 italic font-medium uppercase tracking-widest border-l-2 border-blue-400 pl-2">Config: {loc.pms} • {loc.phoneSys}</p>
                               </div>
                               <div className="flex gap-2 mt-6">
                                  <button className="flex-1 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-slate-600 hover:bg-slate-100 transition-all">Profile Edit</button>
@@ -422,7 +444,7 @@ export default function App() {
     </div>
   );
 
-  // DASHBOARD 2: Rollout Tracker
+  // DASHBOARD 2: Rollout Tracker (With Owner Column & Filter)
   const renderRolloutTracker = () => (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       <header className="flex justify-between items-end pb-2 border-b border-slate-200">
@@ -456,12 +478,12 @@ export default function App() {
       </Card>
 
       <Card title="Operational Status Board" icon={Layers} action={
-        <div className="flex gap-3 items-center">
-           <div className="relative">
+         <div className="flex gap-3 items-center">
+            <div className="relative">
               <select 
                 value={trackerOwnerFilter}
                 onChange={(e) => setTrackerOwnerFilter(e.target.value)}
-                className="pl-9 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300"
+                className="pl-9 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300 transition-colors"
               >
                 <option>All Owners</option>
                 <option>Marcus T.</option>
@@ -469,8 +491,8 @@ export default function App() {
                 <option>James K.</option>
               </select>
               <Filter size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
-           </div>
-        </div>
+            </div>
+         </div>
       }>
         <div className="overflow-x-auto -mx-6 -mb-6">
           <table className="w-full text-left">
@@ -503,7 +525,7 @@ export default function App() {
                        <Badge variant="indigo">{loc.stage}</Badge>
                     </td>
                     <td className="px-8 py-5 flex justify-center items-center">
-                       <SectionMiniStepper statusArray={loc.sectionStatus} />
+                       <SectionMiniStepper statusArray={loc.sectionStatus} currentIdx={loc.currentSectionIdx} />
                     </td>
                     <td className="px-8 py-5 text-right font-black text-blue-600 text-sm">
                        {loc.progress}%
@@ -522,13 +544,13 @@ export default function App() {
     </div>
   );
 
-  // DASHBOARD 3: Setup Summary
+  // DASHBOARD 3: Setup Summary (Refined per User Request)
   const renderSetupSummary = () => (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       <header className="flex justify-between items-end pb-2 border-b border-slate-200">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Setup Summary</h1>
-          <p className="text-slate-500 text-sm uppercase tracking-widest font-bold opacity-60">Account Documentation Hub</p>
+          <p className="text-slate-500 text-sm uppercase tracking-widest font-bold opacity-60">Consolidated Requirement Audit</p>
         </div>
         <button onClick={() => setShowSummaryExportModal(true)} className="flex items-center gap-2 px-6 py-3 text-xs font-black uppercase text-white bg-blue-600 rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all tracking-widest">
           <Download size={18} /> Export Workspace
@@ -540,14 +562,21 @@ export default function App() {
            <Card title="Section Population Status" icon={FileCheck}>
               <div className="space-y-4">
                  {LOCATION_SECTIONS.map(s => (
-                   <div key={s.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center group hover:bg-white hover:border-blue-200 transition-all shadow-sm">
+                   <div 
+                      key={s.id} 
+                      onClick={() => setShowSectionDetailModal(s)}
+                      className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center group hover:bg-white hover:border-blue-300 cursor-pointer transition-all shadow-sm"
+                   >
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl ${s.status === 'Complete' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
                            {s.status === 'Complete' ? <CheckCircle2 size={16}/> : <Clock size={16}/>}
                         </div>
                         <p className="text-xs font-black text-slate-700 uppercase tracking-tight">{s.title}</p>
                       </div>
-                      <Badge variant={s.status === 'Complete' ? 'success' : 'info'}>{s.status}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={s.status === 'Complete' ? 'success' : 'info'}>{s.status}</Badge>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500" />
+                      </div>
                    </div>
                  ))}
               </div>
@@ -556,11 +585,11 @@ export default function App() {
            <Card title="Practice Overview" icon={Building2}>
               <div className="space-y-6">
                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Master Configuration</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Primary Entity</p>
                     <p className="text-sm font-bold text-slate-800 leading-relaxed">{PRACTICE_BASE_DATA.name}</p>
                  </div>
                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl font-medium text-xs text-blue-800 leading-relaxed">
-                    82% population matched. Local overrides identified in 3 locations for telephony logic.
+                    Shared defaults are active for all locations. Multi-site review enabled.
                  </div>
               </div>
            </Card>
@@ -573,7 +602,7 @@ export default function App() {
                   <select 
                     value={summaryOwnerFilter}
                     onChange={(e) => setSummaryOwnerFilter(e.target.value)}
-                    className="pl-9 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300"
+                    className="pl-9 pr-4 py-1.5 text-[10px] font-black uppercase bg-slate-50 border border-slate-200 rounded-lg outline-none appearance-none cursor-pointer hover:border-blue-300 transition-colors"
                   >
                     <option>All Owners</option>
                     <option>Marcus T.</option>
@@ -591,8 +620,8 @@ export default function App() {
                        <tr>
                           <th className="px-8 py-4 w-10"></th>
                           <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Site</th>
-                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Implementation Owner</th>
-                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Inheritance</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Owner</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Roll Out Status</th>
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -603,10 +632,10 @@ export default function App() {
                             </td>
                             <td className="px-8 py-5">
                                <p className="text-sm font-black text-slate-800">{loc.name}</p>
-                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{loc.timezone}</p>
+                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{loc.city}</p>
                             </td>
                             <td className="px-8 py-5">
-                               <div className="flex items-center gap-2">
+                               <div className="flex items-center justify-center gap-2">
                                   <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 uppercase">
                                     {loc.owner.split(' ')[0][0]}
                                   </div>
@@ -614,7 +643,10 @@ export default function App() {
                                </div>
                             </td>
                             <td className="px-8 py-5 text-right">
-                               {loc.id % 2 === 0 ? <Badge variant="warning">Manual Override</Badge> : <Badge>Sync Active</Badge>}
+                               <div className="flex flex-col items-end gap-1">
+                                  <Badge variant="indigo">{loc.stage}</Badge>
+                                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{loc.progress}% Completed</span>
+                               </div>
                             </td>
                          </tr>
                        ))}
@@ -633,10 +665,10 @@ export default function App() {
        <header className="flex justify-between items-end pb-2 border-b border-slate-200">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Contracts & Documents</h1>
-          <p className="text-slate-500 text-sm uppercase tracking-widest font-bold opacity-60">Legal and Commercial Hub</p>
+          <p className="text-slate-500 text-sm uppercase tracking-widest font-bold opacity-60">Legal Hub</p>
         </div>
         <button className="flex items-center gap-2 px-6 py-3 text-xs font-black uppercase text-white bg-blue-600 rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all tracking-widest">
-          <Upload size={18} /> New Document
+          <Upload size={18} /> New File
         </button>
       </header>
 
@@ -657,12 +689,12 @@ export default function App() {
                         <p className="text-sm font-bold text-slate-700">{PRACTICE_BASE_DATA.contractRenewal}</p>
                      </div>
                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Last Sync</p>
-                        <p className="text-sm font-bold text-slate-700">Aug 12, 2024</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">HubSpot Deal</p>
+                        <a href={PRACTICE_BASE_DATA.hubspotUrl} target="_blank" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">Deal Context <ExternalLink size={12}/></a>
                      </div>
                   </div>
                   <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl">
-                     <FileText size={18}/> Download Master MSA
+                     <FileText size={18}/> Download MSA (PDF)
                   </button>
                </div>
             </Card>
@@ -675,7 +707,7 @@ export default function App() {
          </div>
 
          <div className="col-span-12 lg:col-span-7 space-y-6">
-            <Card title="Uploaded Documentation" icon={FileCheck}>
+            <Card title="Repository documentation" icon={FileCheck}>
                <div className="space-y-3">
                   {[
                     { n: 'Letters of Authorization - Bulk.pdf', s: 'Verified', d: 'Oct 01, 2024' },
@@ -703,7 +735,7 @@ export default function App() {
     </div>
   );
 
-  // IMPLEMENTATION TEAM: Global Registry View
+  // Internal: Registry View
   const renderInternalRegistry = () => (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       <header className="flex justify-between items-end pb-2 border-b border-slate-200">
@@ -712,7 +744,7 @@ export default function App() {
           <p className="text-slate-500 text-sm mt-1 uppercase font-bold tracking-widest opacity-60">Global Portfolio Pipeline</p>
         </div>
         <button className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700">
-          <Plus size={18} /> Add Enterprise Group
+          <Plus size={18} /> Register Account
         </button>
       </header>
 
@@ -721,7 +753,7 @@ export default function App() {
           { l: 'Projects', v: '48', i: <Layers size={18}/>, c: 'blue' },
           { l: 'Porting Tasks', v: '124', i: <Phone size={18}/>, c: 'indigo' },
           { l: 'Reviews', v: '18', i: <Eye size={18}/>, c: 'amber' },
-          { l: 'Launch (7D)', v: '42', i: <Activity size={18}/>, c: 'emerald' }
+          { l: 'Go-Live (7D)', v: '42', i: <Activity size={18}/>, c: 'emerald' }
         ].map((s, idx) => (
           <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200/60 flex items-center gap-5 shadow-sm">
              <div className={`p-4 bg-${s.c}-50 text-${s.c}-600 rounded-2xl shadow-inner`}>{s.i}</div>
@@ -797,7 +829,7 @@ export default function App() {
           <div className="flex gap-2">
             {/* PROGRESS VISUALIZATION: Integrated inside location detail as requested */}
             <div className="flex flex-col items-end mr-6 pr-6 border-r border-slate-200">
-               <SectionMiniStepper statusArray={activeLocation.sectionStatus} />
+               <SectionMiniStepper statusArray={activeLocation.sectionStatus} currentIdx={activeLocation.currentSectionIdx} />
                <p className="text-[10px] font-black text-blue-600 uppercase mt-1.5 tracking-widest leading-none">{activeLocation.progress}% COMPLETE</p>
             </div>
             
@@ -860,10 +892,10 @@ export default function App() {
               {activeStep === 0 && (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-10">
                   <div className="grid grid-cols-2 gap-10">
-                    <FormField label="Location Name" required inheritance="overridden">
+                    <FormField label="Location name" required inheritance="overridden">
                       <input type="text" defaultValue={activeLocation.name} className="w-full px-5 py-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all shadow-inner" />
                     </FormField>
-                    <FormField label="Local Timezone" required inheritance="default">
+                    <FormField label="Site Timezone" required inheritance="default">
                       <div className="relative">
                         <select className="w-full px-5 py-4 text-sm font-bold bg-white border border-slate-200 rounded-2xl outline-none appearance-none cursor-pointer focus:ring-2 focus:ring-blue-100 transition-all shadow-inner" value={activeLocation.timezone}>
                            <option>America/Chicago (CST)</option>
@@ -879,7 +911,7 @@ export default function App() {
                     <textarea defaultValue={activeLocation.address} className="w-full px-5 py-4 text-sm font-bold bg-slate-50 border border-slate-200 rounded-2xl outline-none h-24 resize-none focus:ring-2 focus:ring-blue-100 transition-all shadow-inner" />
                   </FormField>
 
-                  <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-100">
+                  <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-50">
                     <FormField label="Primary site Lead" inheritance={null}>
                        <div className="space-y-4">
                           <input type="text" placeholder="Full Name" defaultValue={PRACTICE_BASE_DATA.poc.primary.name} className="w-full px-5 py-3.5 text-sm font-bold bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100" />
@@ -942,6 +974,59 @@ export default function App() {
          </div>
          {badge && <Badge variant="indigo">{badge}</Badge>}
       </button>
+    );
+  };
+
+  // NEW: Section Detail Modal for Setup Summary
+  const renderSectionDetailModal = () => {
+    if (!showSectionDetailModal) return null;
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+         <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-400">
+            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+               <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
+                    <FileCheck size={24}/>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Section Audit: {showSectionDetailModal.title}</h2>
+                    <p className="text-sm text-slate-400 font-medium">Location-wise completion status for this specific section</p>
+                  </div>
+               </div>
+               <button onClick={() => setShowSectionDetailModal(null)} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-600 transition-all"><Plus size={24} className="rotate-45" /></button>
+            </div>
+            <div className="p-0 max-h-[60vh] overflow-y-auto no-scrollbar">
+               <table className="w-full text-left">
+                  <thead className="bg-white sticky top-0 border-b border-slate-100 z-10">
+                     <tr>
+                        <th className="px-10 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</th>
+                        <th className="px-10 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                        <th className="px-10 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Update</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                     {MOCK_LOCATIONS.map(l => {
+                        const isDone = l.sectionStatus[LOCATION_SECTIONS.indexOf(LOCATION_SECTIONS.find(ls => ls.id === showSectionDetailModal.id))];
+                        return (
+                          <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
+                             <td className="px-10 py-5 font-bold text-slate-700 text-sm">{l.name}</td>
+                             <td className="px-10 py-5">
+                                <Badge variant={isDone ? 'success' : 'warning'}>{isDone ? 'Populated' : 'Pending'}</Badge>
+                             </td>
+                             <td className="px-10 py-5 text-right">
+                                <button className="text-[10px] font-black text-blue-600 uppercase hover:underline">Review Data</button>
+                             </td>
+                          </tr>
+                        );
+                     })}
+                  </tbody>
+               </table>
+            </div>
+            <div className="p-8 bg-slate-50 border-t border-slate-100 text-right">
+               <button onClick={() => setShowSectionDetailModal(null)} className="px-10 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">Close Audit</button>
+            </div>
+         </div>
+      </div>
     );
   };
 
@@ -1051,7 +1136,7 @@ export default function App() {
                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Full Rollout Dataset</p>
                       </div>
                    </div>
-                   <div className={`w-4 h-4 rounded-full border-4 bg-white ${exportScope === 'entire' ? 'border-blue-600' : 'border-slate-200'}`} />
+                   <div className={`w-4 h-4 rounded-full border-4 border-blue-600 bg-white ${exportScope === 'entire' ? 'border-blue-600' : 'border-slate-200'}`} />
                 </button>
                 <button 
                   onClick={() => setExportScope('selected')}
@@ -1064,18 +1149,20 @@ export default function App() {
                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{selectedLocations.length} Sites Selected</p>
                       </div>
                    </div>
-                   <div className={`w-4 h-4 rounded-full border-4 bg-white ${exportScope === 'selected' ? 'border-blue-600' : 'border-slate-200'}`} />
+                   <div className={`w-4 h-4 rounded-full border-4 border-blue-600 bg-white ${exportScope === 'selected' ? 'border-blue-600' : 'border-slate-200'}`} />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <button onClick={() => setShowSummaryExportModal(false)} className="py-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest tracking-[0.1em] transition-colors">Cancel</button>
                  <button className="py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all uppercase text-xs tracking-[0.1em] tracking-widest flex items-center justify-center gap-3 font-bold">
-                   <Download size={16}/> Generate report
+                   <Download size={16}/> Download Dataset
                  </button>
               </div>
            </div>
         </div>
       )}
+
+      {renderSectionDetailModal()}
 
       {showCloneModal && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
